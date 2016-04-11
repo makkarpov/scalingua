@@ -8,3 +8,4 @@ script:
 cache:
   directories:
   - $HOME/.sbt
+  - $HOME/.ivy2/cache
