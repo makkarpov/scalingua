@@ -25,6 +25,7 @@ import ru.makkarpov.scalingua.pofile._
 import scala.collection.mutable
 import scala.reflect.internal.Phase
 import scala.reflect.api.Position
+import scala.reflect.macros.Universe
 
 object ExtractorSession {
   class MutableMessage {
@@ -71,7 +72,7 @@ object ExtractorSession {
   }
 }
 
-class ExtractorSession(val run: Context#Run, setts: ExtractorSettings) {
+class ExtractorSession(val global: Universe, setts: ExtractorSettings) {
   private var _finished = false
 
   /* Since macros don't know when compiler will terminate, we will try to make compiler tell it to us.
@@ -80,12 +81,14 @@ class ExtractorSession(val run: Context#Run, setts: ExtractorSettings) {
    * some day.
    */
   try {
-    val global = Class.forName("scala.tools.nsc.Global$Run").getField("$outer").get(run)
     val symbolTable = Class.forName("scala.reflect.internal.SymbolTable")
 
     // Get current phase of the compiler and save `next` pointer of it.
     val currentPhase = symbolTable.getMethod("phase").invoke(global).asInstanceOf[Phase]
     val next = currentPhase.next
+
+    if (next.name == "save-translations")
+      throw new IOException("Attempting to append phase twice!")
 
     // Append a new phase after current.
     val own = new Phase(currentPhase) {
@@ -93,27 +96,25 @@ class ExtractorSession(val run: Context#Run, setts: ExtractorSettings) {
       override def run(): Unit = ExtractorSession.this.finish()
     }
 
-
     // Restore phase chain:
     val nx = classOf[Phase].getDeclaredMethods.find(_.getName.contains("nx_$eq")).getOrElse(sys.error("Cannot find `nx_$eq` method!"))
     nx.setAccessible(true)
     nx.invoke(own, next)
   } catch {
     case t: Throwable =>
-      Console.err.print(
+      Console.err.println(
         """+=====================================================================+
           || Cannot inject a next phase into compiler to save translations.      |
           || Translations will be saved using `Runtime.addShutdownHook`, but it  |
           || can cause issues in SBT where JVM does not fork when compiling.     |
           ||                                                                     |
           || Please report this issue to Github!                                 |
-          |+=====================================================================+
-        """.stripMargin)
+          |+=====================================================================+""".stripMargin)
 
       t.printStackTrace()
 
       Runtime.getRuntime.addShutdownHook(new Thread {
-        setName(s"Translation save hook #${System.identityHashCode(ExtractorSession.this.run)}")
+        setName(s"Translation save hook #${System.identityHashCode(ExtractorSession.this.global)}")
 
         override def run(): Unit = ExtractorSession.this.finish()
       })

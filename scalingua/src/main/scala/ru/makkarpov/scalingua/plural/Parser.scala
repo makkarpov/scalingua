@@ -57,26 +57,24 @@ object Parser {
     val chars = s.iterator.buffered
     val tokens = Seq.newBuilder[Token]
 
-    while (chars.hasNext) {
-      chars.next() match {
-        case 'n' => tokens += NVariableToken
-        case c if c.isDigit =>
-          val number = new StringBuilder
-          number += c
-          while (chars.hasNext && chars.head.isDigit)
-            number += chars.next()
-          tokens += NumberToken(number.result().toLong)
-        case c @ ('(' | ')') => tokens += ParenthesesToken(c == '(')
-        case c if OperatorChars.contains(c) =>
-          val op = new StringBuilder
-          op += c
-          while (chars.hasNext && OperatorChars.contains(chars.head))
-            op += chars.next()
-          tokens += OperatorToken(op.result())
-        case c if c.isWhitespace => /* .. */
-        case ';' if !chars.hasNext => /* .. */
-        case x => throw new IllegalArgumentException(s"Illegal character $x")
-      }
+    for (chr <- chars) chr match {
+      case 'n' => tokens += NVariableToken
+      case c if c.isDigit =>
+        val number = new StringBuilder
+        number += c
+        while (chars.hasNext && chars.head.isDigit)
+          number += chars.next()
+        tokens += NumberToken(number.result().toLong)
+      case c @ ('(' | ')') => tokens += ParenthesesToken(c == '(')
+      case c if OperatorChars.contains(c) =>
+        val op = new StringBuilder
+        op += c
+        while (chars.hasNext && OperatorChars.contains(chars.head))
+          op += chars.next()
+        tokens += OperatorToken(op.result())
+      case c if c.isWhitespace => /* .. */
+      case ';' if !chars.hasNext => /* .. */
+      case x => throw new IllegalArgumentException(s"Illegal character $x")
     }
 
     tokens.result()

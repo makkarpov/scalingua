@@ -23,11 +23,11 @@ object MessageExtractor {
 
   private def setupSession(c: Context): ExtractorSession = {
     val r = session match {
-      case None => new ExtractorSession(c.enclosingRun, ExtractorSettings.fromContext(c))
-      case Some(sess) if sess.run eq c.enclosingRun => sess
+      case None => new ExtractorSession(c.universe, ExtractorSettings.fromContext(c))
+      case Some(sess) if c.universe eq sess.global => sess
       case Some(sess) =>
         sess.finish()
-        new ExtractorSession(c.enclosingRun, ExtractorSettings.fromContext(c))
+        new ExtractorSession(c.universe, ExtractorSettings.fromContext(c))
     }
 
     session = Some(r)

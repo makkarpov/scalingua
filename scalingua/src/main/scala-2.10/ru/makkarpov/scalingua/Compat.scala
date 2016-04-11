@@ -37,28 +37,25 @@ object Compat {
           // $minus$greater
           tnMg: TermName
         ), List(TypeTree())),  List(b)
-      ) if (tnScala.decoded == "scala") && (tnPredef.decoded == "Predef") && (tnArrAss.decoded == "any2ArrowAssoc") &&
-        (tnMg.decoded == "->") => (a, b)
+      ) if (tnScala.decodedName.toString == "scala") && (tnPredef.decodedName.toString == "Predef") &&
+        (tnArrAss.decodedName.toString == "any2ArrowAssoc") && (tnMg.decodedName.toString == "->") => (a, b)
 
       // matches AST for (a, b)
       case Apply(
         TypeApply(
           Select(Select(Ident(tnScala), tnTuple), tnApply),
           List(TypeTree(), TypeTree())
-        ),
-        List(a, b)
-      ) if (tnScala.decoded == "scala") && (tnTuple.decoded == "Tuple2") && (tnApply.decoded == "apply")
-        => (a, b)
+        ), List(a, b)
+      ) if (tnScala.decodedName.toString == "scala") && (tnTuple.decodedName.toString == "Tuple2") &&
+        (tnApply.decodedName.toString == "apply") => (a, b)
 
       case _ => c.abort(c.enclosingPosition, s"Expected tuple definition `x -> y` or `(x, y)`, got instead ${showCode(c)(e.tree)}")
     }
 
-    val keyLiteral = aTree match {
+    (aTree match {
       case Literal(Constant(x: String)) => x
       case _ => c.abort(c.enclosingPosition, s"Expected string literal as first entry of tuple, got ${showCode(c)(aTree)} instead")
-    }
-
-    (keyLiteral, c.Expr[T](bTree))
+    }, c.Expr[T](bTree))
   }
 
   def generateSingular[T: c.WeakTypeTag](c: Context)(ctx: Option[String], str: String, args: Map[String, c.Tree])

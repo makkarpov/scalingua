@@ -47,8 +47,8 @@ object Macros {
     assert(parts.size == args.size + 1)
 
     val inferredNames = args.map(_.tree).map {
-      case Ident(name: TermName) => Some(name.decoded)
-      case Select(This(_), name: TermName) => Some(name.decoded)
+      case Ident(name: TermName) => Some(name.decodedName.toString)
+      case Select(This(_), name: TermName) => Some(name.decodedName.toString)
       case _ => None
     }
 

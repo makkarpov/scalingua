@@ -4,3 +4,7 @@ scala:
 
 script:
  - sbt +test
+
+cache:
+  directories:
+  - $HOME/.sbt

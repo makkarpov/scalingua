@@ -23,7 +23,7 @@ import scala.language.experimental.macros
   */
 object I18n {
   implicit class StringInterpolator(val sc: StringContext) extends AnyVal {
-    def t(args: Any*)(implicit lang: Language, outputFormat: OutputFormat[String]) =
+    def t(args: Any*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
       macro Macros.interpolate[String]
   }
 
