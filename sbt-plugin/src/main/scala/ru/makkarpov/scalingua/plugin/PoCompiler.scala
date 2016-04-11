@@ -55,7 +55,7 @@ object PoCompiler {
         for (s <- trs) dos.writeUTF(s.merge)
       }
 
-      for (m <- PoFile(ctx.src).messages) m match {
+      for (m <- PoFile(ctx.src)) m match {
         case Message.Singular(_, None, id, tr) =>
           dos.writeByte(1)
           dos.writeUTF(id.merge)
@@ -103,7 +103,11 @@ object PoCompiler {
         return
     }
 
-    val hdr = PoFile(ctx.src).messages.find(_.message.isEmpty).map {
+    val hdr = {
+      val iter = PoFile(ctx.src)
+      try iter.find(_.message.isEmpty)
+      finally iter.size // Consume whole iterator and close stream
+    }.map {
       case Message.Singular(_, _, _, tr) => tr.merge
       case Message.Plural(_, _, _, _, trs) => trs.headOption.map(_.merge).getOrElse("")
     }.map(_.trim.split("\n").map(_.split(":", 2))).map(_.map {

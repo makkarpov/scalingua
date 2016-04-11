@@ -124,8 +124,7 @@ class ExtractorSession(val global: Universe, setts: ExtractorSettings) {
   private val byMsgid = mutable.Map.empty[(String, Option[String]), MutableMessage]
 
   if (setts.targetFile.exists() && setts.enable) {
-    val fle = PoFile(setts.targetFile)
-    for (m <- fle.messages) {
+    for (m <- PoFile(setts.targetFile)) {
       val mm = new MutableMessage
       mm := m
       for (loc <- mm.locations) {
@@ -176,7 +175,7 @@ class ExtractorSession(val global: Universe, setts: ExtractorSettings) {
       }
 
       val msgs = byMsgid.valuesIterator.filter(_.locations.nonEmpty).toSeq.sortWith(cmp).map(_.toMsg)
-      PoFile(setts.targetFile) = PoFile(msgs)
+      PoFile(setts.targetFile) = msgs.iterator
     }
   }
 

@@ -55,60 +55,63 @@ object PoFile {
 
   private def headerComment(s: String) = s"#  !Generated: $s"
 
-  def apply(f: File): PoFile = apply(new FileInputStream(f))
+  def apply(f: File): Iterator[Message] = apply(new FileInputStream(f))
 
-  def apply(is: InputStream): PoFile = {
+  def apply(is: InputStream): Iterator[Message] = {
     val input = new BufferedReader(new InputStreamReader(is, encoding))
 
     val header = headerComment("")
     val lines = Iterator.continually(input.readLine()).takeWhile(_ ne null).map(_.trim)
                     .filter(x => x.nonEmpty && !x.startsWith(header)).buffered
 
-    try {
-      def readEntry(): (String, MultipartString) = {
-        val entryLiteral(cmd, stringHead) = lines.next()
-        var done = false
-        var strings = Seq(StringUtils.unescape(stringHead))
-        while (!done && lines.hasNext) lines.head match {
-          case lineLiteral(str) =>
-            strings :+= StringUtils.unescape(str)
-            lines.next() // consume
-          case _ => done = true
-        }
-        (cmd, MultipartString(strings))
+    def readEntry(): (String, MultipartString) = {
+      val entryLiteral(cmd, stringHead) = lines.next()
+      var done = false
+      var strings = Seq(StringUtils.unescape(stringHead))
+      while (!done && lines.hasNext) lines.head match {
+        case lineLiteral(str) =>
+          strings :+= StringUtils.unescape(str)
+          lines.next() // consume
+        case _ => done = true
+      }
+      (cmd, MultipartString(strings))
+    }
+
+    def peekEntry(): Option[String] = {
+      if (!lines.hasNext)
+        return None
+
+      lines.head match {
+        case entryLiteral(cmd, _) => Some(cmd)
+        case _ => None
+      }
+    }
+
+    def readHeader(): MessageHeader = {
+      var trComments = Seq.empty[String]
+      var exComments = Seq.empty[String]
+      var locations = Seq.empty[MessageLocation]
+      var flags = MessageFlag.ValueSet.empty
+
+      while (lineAnyHeader.findFirstIn(lines.head).isDefined) lines.next() match {
+        case lineTrComment(cmt) => trComments :+= cmt
+        case lineExComment(cmt) => exComments :+= cmt
+        case lineLocation(fle, lne) => locations :+= MessageLocation(fle, lne.toInt)
+        case lineFlags(flgStr) =>
+          for (s <- flgStr.split(",").map(_.trim.toLowerCase))
+            flags += MessageFlag.withName(s)
       }
 
-      def peekEntry(): Option[String] = {
-        if (!lines.hasNext)
-          return None
+      MessageHeader(trComments, exComments, locations, flags)
+    }
 
-        lines.head match {
-          case entryLiteral(cmd, _) => Some(cmd)
-          case _ => None
-        }
+    def readMessage(): Message = {
+      if (!lines.hasNext) {
+        input.close()
+        return null
       }
 
-      def readHeader(): MessageHeader = {
-        var trComments = Seq.empty[String]
-        var exComments = Seq.empty[String]
-        var locations = Seq.empty[MessageLocation]
-        var flags = MessageFlag.ValueSet.empty
-
-        while (lineAnyHeader.findFirstIn(lines.head).isDefined) lines.next() match {
-          case lineTrComment(cmt) => trComments :+= cmt
-          case lineExComment(cmt) => exComments :+= cmt
-          case lineLocation(fle, lne) => locations :+= MessageLocation(fle, lne.toInt)
-          case lineFlags(flgStr) =>
-            for (s <- flgStr.split(",").map(_.trim.toLowerCase))
-              flags += MessageFlag.withName(s)
-        }
-
-        MessageHeader(trComments, exComments, locations, flags)
-      }
-
-      val bldr = Seq.newBuilder[Message]
-
-      while (lines.hasNext) {
+      try {
         val hdr = readHeader()
 
         val (msgCtx, msgId) = readEntry() match {
@@ -119,7 +122,7 @@ object PoFile {
           case ("msgid", id) => (None, id)
         }
 
-        val msg = peekEntry() match {
+        peekEntry() match {
           case Some("msgstr") => // singular entry
             val ("msgstr", msgStr) = readEntry()
             Message.Singular(hdr, msgCtx, msgId, msgStr)
@@ -137,7 +140,7 @@ object PoFile {
                   val (_, msgs) = readEntry()
                   translations :+= msgs
 
-                case Some(e @ entryMsgPlural()) =>
+                case Some(e@entryMsgPlural()) =>
                   throw new IllegalArgumentException(s"Entries are out-of-order: '$e'")
 
                 case _ => done = true
@@ -152,15 +155,17 @@ object PoFile {
           case None =>
             throw new IllegalArgumentException("\"msgstr\" or \"msgid_plural\" expected.")
         }
-
-        bldr += msg
+      } catch {
+        case e: Exception =>
+          input.close()
+          throw e
       }
+    }
 
-      new PoFile(bldr.result())
-    } finally input.close()
+    Iterator.continually(readMessage()).takeWhile(_ ne null)
   }
 
-  def update(f: File, fpo: PoFile): Unit = {
+  def update(f: File, messages: Iterator[Message]): Unit = {
     val output = new PrintWriter(new OutputStreamWriter(new FileOutputStream(f), encoding), false)
     try {
       output.println(headerComment(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())))
@@ -173,7 +178,7 @@ object PoFile {
         else for (p <- m.parts) output.println("\"" + StringUtils.escape(p) + "\"")
       }
 
-      for (m <- fpo.messages) {
+      for (m <- messages) {
         for (s <- m.header.comments)
           output.println(s"#  $s")
 
@@ -207,5 +212,3 @@ object PoFile {
     } finally output.close()
   }
 }
-
-case class PoFile(messages: Seq[Message])
