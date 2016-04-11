@@ -1,4 +1,4 @@
-Scalingua [![Build Status](https://travis-ci.org/makkarpov/scalingua.svg?branch=master)](https://travis-ci.org/makkarpov/scalingua)
+Scalingua [![Build Status](https://travis-ci.org/makkarpov/scalingua.svg?branch=master)](https://travis-ci.org/makkarpov/scalingua) [![Join the chat at https://gitter.im/makkarpov/scalingua](https://badges.gitter.im/makkarpov/scalingua.svg)](https://gitter.im/makkarpov/scalingua?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 =========
 
 Have you ever wondered that there is no `gettext`-like library for Scala? **Scalingua** is here to fix it! It combines
