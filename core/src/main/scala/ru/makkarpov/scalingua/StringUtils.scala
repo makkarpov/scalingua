@@ -21,11 +21,25 @@ package ru.makkarpov.scalingua
   * escaping and unescaping.
   */
 object StringUtils {
-  val VariableCharacter = '%'
-  val VariableParens    = ('(', ')')
+  /**
+    * Interpolation placeholder character
+    */
+  val VariableCharacter   = '%'
+
+  /**
+    * Opening and closing interpolation parentheses
+    */
+  val VariableParentheses = '(' -> ')'
 
   class InvalidInterpolationException(msg: String) extends IllegalArgumentException(msg)
 
+  /**
+    * Convert escape sequences like `\\n` to their meanings. Differs from `StringContext.treatEscapes` because latter
+    * does not handle `\\uXXXX` escape codes.
+    *
+    * @param s String with literal escape codes
+    * @return `s` having escape codes replaced with their meanings.
+    */
   def unescape(s: String): String = {
     val ret = new StringBuilder
     ret.sizeHint(s.length)
@@ -71,6 +85,12 @@ object StringUtils {
     ret.result()
   }
 
+  /**
+    * Converts all non-letter and non-printable characters in `s` to their escape codes.
+    *
+    * @param s Raw string to escape
+    * @return Escaped version of `s`
+    */
   def escape(s: String): String = {
     val ret = new StringBuilder
     ret.sizeHint(s.length)
@@ -93,6 +113,18 @@ object StringUtils {
     ret.result()
   }
 
+  /**
+    * Replaces all occurences of placeholders like `%(var)` to corresponding variables in `args` with respect to
+    * specified `OutputFormat` (all placeholders will be escaped). `%` can be escaped as `%%`. Note: for performance
+    * reasons this function will not use any `Map`s to index variables, it will use linear search every time it
+    * encounters a variable.
+    *
+    * @param msg Interpolation string
+    * @param args Interpolation variables
+    * @param format Desired `OutputFormat` summoned implicitly
+    * @tparam R Result type
+    * @return Interpolation result wrapped by `OutputFormat`
+    */
   def interpolate[R](msg: String, args: (String, Any)*)(implicit format: OutputFormat[R]): R = {
     val result = new StringBuilder
 
@@ -114,8 +146,8 @@ object StringUtils {
             result += VariableCharacter
             cursor = pos + 2
 
-          case VariableParens._1 =>
-            val end = msg.indexOf(VariableParens._2, pos + 2)
+          case VariableParentheses._1 =>
+            val end = msg.indexOf(VariableParentheses._2, pos + 2)
 
             if (end == -1)
               throw new IllegalArgumentException(s"Unterminated variable at $pos")
@@ -151,6 +183,12 @@ object StringUtils {
     format.convert(result.result())
   }
 
+  /**
+    * Extracts all referred variables from string and returns a `Set` with names.
+    *
+    * @param msg Interpolation string
+    * @return Set of variable names referred in `msg`
+    */
   def extractVariables(msg: String): Set[String] = {
     val result = Set.newBuilder[String]
 
@@ -167,8 +205,8 @@ object StringUtils {
           case VariableCharacter =>
             cursor = pos + 2
 
-          case VariableParens._1 =>
-            val end = msg.indexOf(VariableParens._2, pos + 2)
+          case VariableParentheses._1 =>
+            val end = msg.indexOf(VariableParentheses._2, pos + 2)
             if (end == -1)
               throw new IllegalArgumentException(s"Unterminated variable at $pos")
 

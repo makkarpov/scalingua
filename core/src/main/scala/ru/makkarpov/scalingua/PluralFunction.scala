@@ -16,7 +16,17 @@
 
 package ru.makkarpov.scalingua
 
+/**
+  * Trait representing `Plural-Forms` *.po header, either statically compiled by SBT plugin or dynamically parsed.
+  */
 trait PluralFunction {
+  /**
+    * Number of plural forms in language
+    */
   def numPlurals: Int
+
+  /**
+    * A plural form for number `n`
+    */
   def plural(n: Long): Int
 }

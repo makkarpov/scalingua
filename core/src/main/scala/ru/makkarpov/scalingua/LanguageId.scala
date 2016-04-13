@@ -16,6 +16,41 @@
 
 package ru.makkarpov.scalingua
 
-case class LanguageId(language: String, country: String) {
-  override def toString: String = s"${language}_$country"
+object LanguageId {
+  private val languagePattern = "([a-zA-Z]{2,3})(?:[_-]([a-zA-Z]{2,3}))?".r
+
+  /**
+    * Creates `LanguageId` instance from language codes like `en` or `en-US`
+    *
+    * @param s Language code
+    * @return `Some` with `LanguageId` instance if language code was parsed successfully, or `None` otherwise.
+    */
+  def get(s: String): Option[LanguageId] = s match {
+    case languagePattern(lang, country) =>
+      Some(LanguageId(lang.toLowerCase, if (country eq null) "" else country.toUpperCase))
+    case _ => None
+  }
+
+  /**
+    * Creates `LanguageId` instance from language codes like `en` or `en-US`
+    *
+    * @param s Language code
+    * @return `LanguageId` instance
+    */
+  def apply(s: String): LanguageId = get(s).getOrElse(throw new IllegalArgumentException(s"Unrecognized language '$s'"))
+}
+
+/**
+  * Class representing a pair of language and country (e.g. `en_US`)
+  *
+  * @param language ISO code of language
+  * @param country ISO code of country, may be empty for generic languages.
+  */
+final case class LanguageId(language: String, country: String) {
+  /**
+    * @return Whether the country part is present
+    */
+  @inline def hasCountry = country.nonEmpty
+
+  override def toString: String = language + (if (hasCountry) "-" else "") + country
 }

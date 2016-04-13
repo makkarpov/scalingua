@@ -16,12 +16,16 @@
 
 package ru.makkarpov.scalingua
 
-/**
-  * Base trait for objects reprensenting language files. Can be implicitly summoned from `Messages` and `LanguageId`.
-  */
 object Language {
+  /**
+    * Implicit conversion to derive language from available `LanguageId` and `Messages`
+    */
+  @inline
   implicit def $providedLanguage(implicit msg: Messages, lang: LanguageId): Language = msg.apply(lang)
 
+  /**
+    * A fallback English language that always returns the same message strings.
+    */
   val English: Language = new Language {
     override def id = LanguageId("en", "US")
 
@@ -33,10 +37,50 @@ object Language {
   }
 }
 
+/**
+  * Base trait for objects reprensenting languages.
+  */
 trait Language {
+  /**
+    * A exact (with country part) ID of this language.
+    */
   def id: LanguageId
+
+  /**
+    * Resolve singular form of message without a context.
+    *
+    * @param msgid A message to resolve
+    * @return Resolved message or `msgid` itself.
+    */
   def singular(msgid: String): String
+
+  /**
+    * Resolve singular form of message with a context.
+    *
+    * @param msgctx A context of message
+    * @param msgid A message to resolve
+    * @return Resolved message or `msgid` itself.
+    */
   def singular(msgctx: String, msgid: String): String
+
+  /**
+    * Resolve plural form of message without a context
+    *
+    * @param msgid A singular form of message
+    * @param msgidPlural A plural form of message
+    * @param n Numeral representing which form to choose
+    * @return Resolved plural form of message
+    */
   def plural(msgid: String, msgidPlural: String, n: Long): String
+
+  /**
+    * Resolve plural form of message with a context.
+    *
+    * @param msgctx A context of message
+    * @param msgid A singular form of message
+    * @param msgidPlural A plural form of message
+    * @param n Numeral representing which form to choose
+    * @return Resolved plural form of message
+    */
   def plural(msgctx: String, msgid: String, msgidPlural: String, n: Long): String
 }

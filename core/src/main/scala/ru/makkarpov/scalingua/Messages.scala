@@ -17,6 +17,12 @@
 package ru.makkarpov.scalingua
 
 object Messages {
+  /**
+    * Load all available languages that are compiled by SBT plugin.
+    *
+    * @param pkg Package to seek in. Must be equal to `localePackage` SBT setting.
+    * @return A loaded `Messages`
+    */
   def compiled(pkg: String = "locales"): Messages =
     try {
       val cls = Class.forName(pkg + (if (pkg.nonEmpty) "." else "") + "Languages$")
@@ -27,6 +33,11 @@ object Messages {
     }
 }
 
+/**
+  * Class representing a collection of language.
+  *
+  * @param langs Available languages
+  */
 class Messages(langs: Language*) {
   private val (byLang, byCountry) = {
     val lng = Map.newBuilder[String, Language]
@@ -45,5 +56,30 @@ class Messages(langs: Language*) {
     (lng.result(), cntr.result())
   }
 
+  /**
+    * Retrieves a language from message set by it's ID. The languages are tried in this order:
+    *  1) Exact language, e.g. `ru_RU`
+    *  2) Language matched only by language id, e.g. `ru_**`
+    *  3) Fallback English language
+    *
+    * @param lang Language ID to fetch
+    * @return Fetched language if available, or `Language.English` otherwise.
+    */
   def apply(lang: LanguageId): Language = byCountry.getOrElse(lang, byLang.getOrElse(lang.language, Language.English))
+
+  /**
+    * Test whether this messages contains specified language, either exact (`ru_RU`) or fuzzy (`ru_**`).
+    *
+    * @param lang Language ID to test
+    * @return Boolean indicating whether specified language is available
+    */
+  def contains(lang: LanguageId): Boolean = byCountry.contains(lang) || byLang.contains(lang.language)
+
+  /**
+    * Test whether this messages contains specified language exactly.
+    *
+    * @param lang
+    * @return
+    */
+  def containsExact(lang: LanguageId): Boolean = byCountry.contains(lang)
 }

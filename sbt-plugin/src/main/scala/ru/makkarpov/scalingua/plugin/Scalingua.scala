@@ -144,7 +144,9 @@ object Scalingua extends AutoPlugin {
     val idx = {
       val langs = collectLangs(compileLocales).value
       val pkg = (localePackage in compileLocales).value
+
       val tgt = filePkg((target in compileLocales).value, pkg) / "Languages.scala"
+      createParent(tgt)
 
       PoCompiler.generateIndex(pkg, tgt, langs)
 

@@ -45,8 +45,11 @@ object Compat {
     (keyLiteral, c.Expr[T](bTree))
   }
 
-  def generateSingular[T: c.WeakTypeTag](c: Context)(ctx: Option[String], str: String, args: Map[String, c.Tree])
-                                        (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] = {
+  def generateSingular[T: c.WeakTypeTag]
+    (c: Context)
+    (ctx: Option[String], str: String, args: Map[String, c.Tree])
+    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+  {
 
     MessageExtractor.singular(c)(ctx, str)
 
@@ -60,8 +63,11 @@ object Compat {
     generateInterpolation[T](c)(tr, args, outputFormat).asInstanceOf[c.Expr[T]]
   }
 
-  def generatePlural[T: c.WeakTypeTag](c: Context)(ctx: Option[String], str: String, strPlural: String, n: c.Expr[Long],
-                 args: Map[String, c.Tree])(lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] = {
+  def generatePlural[T: c.WeakTypeTag]
+    (c: Context)
+    (ctx: Option[String], str: String, strPlural: String, n: c.Expr[Long], args: Map[String, c.Tree])
+    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+  {
 
     MessageExtractor.plural(c)(ctx, str, strPlural)
 
@@ -75,8 +81,10 @@ object Compat {
     generateInterpolation[T](c)(tr, args, outputFormat).asInstanceOf[c.Expr[T]]
   }
 
-  private def generateInterpolation[T: c.WeakTypeTag](c: Context)(str: c.Expr[String], args: Map[String, c.Tree],
-                                                              outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] = {
+  private def generateInterpolation[T: c.WeakTypeTag]
+    (c: Context)
+    (str: c.Expr[String], args: Map[String, c.Tree], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+  {
 
     import c.universe._
 

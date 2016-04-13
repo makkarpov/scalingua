@@ -31,7 +31,11 @@ object Macros {
     * variable is a complex expression, you can pass the name after it, like `t"2 + 2 is \${2 + 2}%(result)"`, so the
     * interpolator will use `"result"` as name of expression `2 + 2`.
     */
-  def interpolate[T: c.WeakTypeTag](c: Context)(args: c.Expr[Any]*)(lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] = {
+  def interpolate[T: c.WeakTypeTag]
+    (c: Context)
+    (args: c.Expr[Any]*)
+    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+  {
     import c.universe._
 
     val parts = c.prefix.tree match {
@@ -58,8 +62,8 @@ object Macros {
         argName = inferredNames(idx)
         part = parts(idx + 1)
       } yield {
-        if (part.startsWith(StringUtils.VariableCharacter.toString + StringUtils.VariableParens._1)) {
-          val pos = part.indexOf(StringUtils.VariableParens._2)
+        if (part.startsWith(StringUtils.VariableCharacter.toString + StringUtils.VariableParentheses._1)) {
+          val pos = part.indexOf(StringUtils.VariableParentheses._2)
           val name = part.substring(2, pos)
           val filtered = part.substring(pos + 1)
 
@@ -85,18 +89,29 @@ object Macros {
   }
 
   /**
-    * Macro that will check the supplied string that all interpolation variables are present at `args`.
+    * The whole purpose of this macro, beside of extraction of strings, is to verify that all string interpolation
+    * variables are present and to omit insertion of `StringUtils.interpolate` if nothing is dynamic.
     */
-  def singular[T: c.WeakTypeTag](c: Context)(msg: c.Expr[String], args: c.Expr[(String, Any)]*)
-                                (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] = {
+  def singular[T: c.WeakTypeTag]
+    (c: Context)
+    (msg: c.Expr[String], args: c.Expr[(String, Any)]*)
+    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+  {
 
     val (msgid, vars) = verifyVariables(c)(msg, args, None)
 
     Compat.generateSingular[T](c)(None, msgid, vars)(lang, outputFormat).asInstanceOf[c.Expr[T]]
   }
 
-  def singularCtx[T: c.WeakTypeTag](c: Context)(ctx: c.Expr[String], msg: c.Expr[String], args: c.Expr[(String, Any)]*)
-                                   (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] = {
+  /**
+    * The whole purpose of this macro, beside of extraction of strings, is to verify that all string interpolation
+    * variables are present and to omit insertion of `StringUtils.interpolate` if nothing is dynamic.
+    */
+  def singularCtx[T: c.WeakTypeTag]
+    (c: Context)
+    (ctx: c.Expr[String], msg: c.Expr[String], args: c.Expr[(String, Any)]*)
+    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+  {
 
     val ctxStr = stringLiteral(c)(ctx)
     val (msgid, vars) = verifyVariables(c)(msg, args, None)
@@ -104,8 +119,15 @@ object Macros {
     Compat.generateSingular[T](c)(Some(ctxStr), msgid, vars)(lang, outputFormat).asInstanceOf[c.Expr[T]]
   }
 
-  def plural[T: c.WeakTypeTag](c: Context)(msg: c.Expr[String], msgPlural: c.Expr[String], n: c.Expr[Long],
-           args: c.Expr[(String, Any)]*)(lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] = {
+  /**
+    * The whole purpose of this macro, beside of extraction of strings, is to verify that all string interpolation
+    * variables are present and to omit insertion of `StringUtils.interpolate` if nothing is dynamic.
+    */
+  def plural[T: c.WeakTypeTag]
+    (c: Context)
+    (msg: c.Expr[String], msgPlural: c.Expr[String], n: c.Expr[Long], args: c.Expr[(String, Any)]*)
+    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+  {
 
     val (msgid, vars) = verifyVariables(c)(msg, args, Some(n))
     val (msgidPlural, _) = verifyVariables(c)(msgPlural, args, Some(n))
@@ -113,8 +135,15 @@ object Macros {
     Compat.generatePlural[T](c)(None, msgid, msgidPlural, n, vars)(lang, outputFormat).asInstanceOf[c.Expr[T]]
   }
 
-  def pluralCtx[T: c.WeakTypeTag](c: Context)(ctx: c.Expr[String], msg: c.Expr[String], msgPlural: c.Expr[String],
-    n: c.Expr[Long], args: c.Expr[(String, Any)]*)(lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] = {
+  /**
+    * The whole purpose of this macro, beside of extraction of strings, is to verify that all string interpolation
+    * variables are present and to omit insertion of `StringUtils.interpolate` if nothing is dynamic.
+    */
+  def pluralCtx[T: c.WeakTypeTag]
+    (c: Context)
+    (ctx: c.Expr[String], msg: c.Expr[String], msgPlural: c.Expr[String], n: c.Expr[Long], args: c.Expr[(String, Any)]*)
+    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+  {
 
     val ctxStr = stringLiteral(c)(ctx)
     val (msgid, vars) = verifyVariables(c)(msg, args, Some(n))
@@ -125,8 +154,10 @@ object Macros {
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  private def verifyVariables(c: Context)(msg: c.Expr[String], args: Seq[c.Expr[(String, Any)]],
-                                          n: Option[c.Expr[Long]]): (String, Map[String, c.Tree]) = {
+  private def verifyVariables
+    (c: Context)
+    (msg: c.Expr[String], args: Seq[c.Expr[(String, Any)]], n: Option[c.Expr[Long]]): (String, Map[String, c.Tree]) =
+  {
     val msgStr = stringLiteral(c)(msg)
     val vars = StringUtils.extractVariables(msgStr)
 
