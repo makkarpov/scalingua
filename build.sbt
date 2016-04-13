@@ -14,7 +14,7 @@ val common = Seq(
   version := "0.2",
 
   crossPaths := true,
-  scalaVersion := "2.11.7",
+  scalaVersion := "2.10.4",
   crossScalaVersions := Seq("2.10.4", "2.11.7"),
   scalacOptions ++= Seq( "-Xfatal-warnings", "-feature", "-deprecation" ),
 
@@ -62,7 +62,17 @@ lazy val scalingua = project
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
       "org.scalatest" %% "scalatest" % "2.2.6" % Test
-    )
+    ),
+
+    libraryDependencies ++= {
+      CrossVersion.binaryScalaVersion(scalaVersion.value) match {
+        case "2.10" => Seq(
+          compilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full),
+          "org.scalamacros" %% "quasiquotes" % "2.0.0"
+        )
+        case _ => Nil
+      }
+    }
   )
   .dependsOn(core)
 

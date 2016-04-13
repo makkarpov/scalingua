@@ -114,4 +114,32 @@ class MacroTest extends FlatSpec with Matchers {
     """ val s = "1"; pc(s, "%(n)", "%(n)", 1) """ shouldNot compile
     """ val s = "%(n)"; pc("1", s, "%(n)", 1) """ shouldNot compile
   }
+
+  it should "handle multiline strings" in {
+    t"""1
+2
+3""" shouldBe "{s:1\n2\n3}"
+
+    t"""1
+       |2""" shouldBe "{s:1\n       |2}"
+
+    t("""1
+2
+3""") shouldBe "{s:1\n2\n3}"
+
+
+    t("""1
+        |2
+        |3""".stripMargin) shouldBe "{s:1\n2\n3}"
+
+
+    t("""1
+        #2
+        #3
+        """.stripMargin('#')) shouldBe "{s:1\n2\n3}"
+
+    t("""1
+        |2
+      """.stripMargin('#')) shouldBe "{s:1\n        |2}"
+  }
 }

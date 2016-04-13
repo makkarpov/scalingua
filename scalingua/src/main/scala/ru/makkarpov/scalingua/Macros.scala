@@ -17,6 +17,7 @@
 package ru.makkarpov.scalingua
 
 import Compat._
+import MacroUtils._
 
 /**
   * An entry point for all macros which may be useful if you want to define custom functions (like your own `Utils.t`
@@ -40,10 +41,7 @@ object Macros {
 
     val parts = c.prefix.tree match {
       case Apply(_, List(Apply(_, rawParts))) =>
-        rawParts map {
-          case Literal(Constant(s: String)) => StringContext.treatEscapes(s)
-        }
-
+        rawParts.map(stringLiteral(c)(_)).map(StringContext.treatEscapes)
       case _ =>
         c.abort(c.enclosingPosition, "Failed to detect application context")
     }
@@ -70,7 +68,7 @@ object Macros {
           (filtered, name, args(idx))
         } else {
           if (argName.isEmpty)
-            c.abort(c.enclosingPosition, s"No name is defined for part #$idx (${Compat.showCode(c)(args(idx).tree)})")
+            c.abort(c.enclosingPosition, s"No name is defined for part #$idx (${Compat.prettyPrint(c)(args(idx).tree)})")
 
           (part, argName.get, args(idx))
         }
@@ -85,7 +83,7 @@ object Macros {
 
     val tr = filtered.groupBy(_._2).mapValues(_.head._3.tree)
 
-    Compat.generateSingular[T](c)(None, msgid, tr)(lang, outputFormat).asInstanceOf[c.Expr[T]]
+    generateSingular[T](c)(None, msgid, tr)(lang, outputFormat).asInstanceOf[c.Expr[T]]
   }
 
   /**
@@ -100,7 +98,7 @@ object Macros {
 
     val (msgid, vars) = verifyVariables(c)(msg, args, None)
 
-    Compat.generateSingular[T](c)(None, msgid, vars)(lang, outputFormat).asInstanceOf[c.Expr[T]]
+    generateSingular[T](c)(None, msgid, vars)(lang, outputFormat).asInstanceOf[c.Expr[T]]
   }
 
   /**
@@ -113,10 +111,10 @@ object Macros {
     (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
   {
 
-    val ctxStr = stringLiteral(c)(ctx)
+    val ctxStr = stringLiteral(c)(ctx.tree)
     val (msgid, vars) = verifyVariables(c)(msg, args, None)
 
-    Compat.generateSingular[T](c)(Some(ctxStr), msgid, vars)(lang, outputFormat).asInstanceOf[c.Expr[T]]
+    generateSingular[T](c)(Some(ctxStr), msgid, vars)(lang, outputFormat).asInstanceOf[c.Expr[T]]
   }
 
   /**
@@ -132,7 +130,7 @@ object Macros {
     val (msgid, vars) = verifyVariables(c)(msg, args, Some(n))
     val (msgidPlural, _) = verifyVariables(c)(msgPlural, args, Some(n))
 
-    Compat.generatePlural[T](c)(None, msgid, msgidPlural, n, vars)(lang, outputFormat).asInstanceOf[c.Expr[T]]
+    generatePlural[T](c)(None, msgid, msgidPlural, n, vars)(lang, outputFormat).asInstanceOf[c.Expr[T]]
   }
 
   /**
@@ -145,11 +143,11 @@ object Macros {
     (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
   {
 
-    val ctxStr = stringLiteral(c)(ctx)
+    val ctxStr = stringLiteral(c)(ctx.tree)
     val (msgid, vars) = verifyVariables(c)(msg, args, Some(n))
     val (msgidPlural, _) = verifyVariables(c)(msgPlural, args, Some(n))
 
-    Compat.generatePlural[T](c)(Some(ctxStr), msgid, msgidPlural, n, vars)(lang, outputFormat).asInstanceOf[c.Expr[T]]
+    generatePlural[T](c)(Some(ctxStr), msgid, msgidPlural, n, vars)(lang, outputFormat).asInstanceOf[c.Expr[T]]
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -158,7 +156,7 @@ object Macros {
     (c: Context)
     (msg: c.Expr[String], args: Seq[c.Expr[(String, Any)]], n: Option[c.Expr[Long]]): (String, Map[String, c.Tree]) =
   {
-    val msgStr = stringLiteral(c)(msg)
+    val msgStr = stringLiteral(c)(msg.tree)
     val vars = StringUtils.extractVariables(msgStr)
 
     var exprs = args.map(tupleLiteral(c)(_))
@@ -181,14 +179,5 @@ object Macros {
         c.abort(c.enclosingPosition, s"Variable `$n` is not present at interpolation string")
 
     (msgStr, Map(exprs:_*).mapValues(_.tree).asInstanceOf[Map[String, c.Tree]])
-  }
-
-  private def stringLiteral(c: Context)(s: c.Expr[String]): String = {
-    import c.universe._
-
-    s.tree match {
-      case Literal(Constant(s: String)) => s
-      case _ => c.abort(c.enclosingPosition, s"Expected string literal, got ${Compat.showCode(c)(s.tree)}")
-    }
   }
 }
