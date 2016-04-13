@@ -27,8 +27,8 @@ import Compat._
 object Macros {
   /**
     * String interpolator that will infer the name of the variables passed in it and create an interpolation string
-    * based on them. For example, `t"Hello, $name"` will be converted to string `"Hello, %(name)!"`. If interpolation
-    * variable is a complex expression, you can pass the name after it, like `t"2 + 2 is ${2 + 2}%(result)"`, so the
+    * based on them. For example, `t"Hello, \$name"` will be converted to string `"Hello, %(name)!"`. If interpolation
+    * variable is a complex expression, you can pass the name after it, like `t"2 + 2 is \${2 + 2}%(result)"`, so the
     * interpolator will use `"result"` as name of expression `2 + 2`.
     */
   def interpolate[T: c.WeakTypeTag](c: Context)(args: c.Expr[Any]*)(lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] = {

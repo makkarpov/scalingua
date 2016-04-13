@@ -4,6 +4,9 @@ name := "scalingua-root"
 version := "1.0"
 crossPaths := true
 
+publishArtifact := false
+publishTo := Some(Resolver.file("Transient repository", file("/tmp/unused")))
+
 enablePlugins(CrossPerProjectPlugin)
 
 val common = Seq(
@@ -15,19 +18,18 @@ val common = Seq(
   crossScalaVersions := Seq("2.10.4", "2.11.7"),
   scalacOptions ++= Seq( "-Xfatal-warnings", "-feature", "-deprecation" ),
 
+  publishArtifact in Test := false,
   publishMavenStyle := true,
+
+  licenses := Seq("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+  homepage := Some(url("https://github.com/makkarpov/scalingua")),
+  scmInfo := Some(ScmInfo(
+    browseUrl = new URL("https://github.com/makkarpov/scalingua"),
+    connection = "scm:git://github.com/makkarpov/scalingua.git"
+  )),
+
+  // Seems that SBT key `developers` is producing incorrect results
   pomExtra := {
-    <url>https://github.com/makkarpov/scalingua</url>
-    <licenses>
-      <license>
-        <name>Apache 2</name>
-        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-      </license>
-    </licenses>
-    <scm>
-      <url>git://github.com/makkarpov/scalingua.git</url>
-      <connection>scm:git://github.com/makkarpov/scalingua.git</connection>
-    </scm>
     <developers>
       <developer>
         <id>makkarpov</id>
@@ -35,6 +37,14 @@ val common = Seq(
         <url>https://github.com/makkarpov</url>
       </developer>
     </developers>
+  },
+
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
   }
 )
 
