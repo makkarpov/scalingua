@@ -17,46 +17,114 @@
 package ru.makkarpov.scalingua
 
 import Compat._
-import MacroUtils._
+import ru.makkarpov.scalingua.extract.MessageExtractor
 
-/**
-  * An entry point for all macros which may be useful if you want to define custom functions (like your own `Utils.t`
-  * referencing this macros) or custom specialized string interpolators (like `th""` for HTML). Without this class it
-  * would be impossible, since macros will expand at your `Utils` class and complain that string literal is required
-  * for I18n message.
-  */
 object Macros {
-  /**
-    * String interpolator that will infer the name of the variables passed in it and create an interpolation string
-    * based on them. For example, `t"Hello, \$name"` will be converted to string `"Hello, %(name)!"`. If interpolation
-    * variable is a complex expression, you can pass the name after it, like `t"2 + 2 is \${2 + 2}%(result)"`, so the
-    * interpolator will use `"result"` as name of expression `2 + 2`.
-    */
-  def interpolate[T: c.WeakTypeTag]
-    (c: Context)
+  // All macros variants: (lazy, eager) x (interpolation | (singular, plural) x (ctx, non ctx)), 10 total
+
+  // Interpolators:
+
+  def interpolate[T: c.WeakTypeTag](c: Context)
     (args: c.Expr[Any]*)
     (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
   {
     import c.universe._
+    val (msg, argsT) = interpolator(c)(args.map(_.tree))
+    c.Expr[T](generate[T](c)(None, q"$msg", None, argsT)(Some(lang.tree), outputFormat.tree))
+  }
 
+  def lazyInterpolate[T: c.WeakTypeTag](c: Context)
+    (args: c.Expr[Any]*)
+    (outputFormat: c.Expr[OutputFormat[T]]): c.Expr[LValue[T]] =
+  {
+    import c.universe._
+    val (msg, argsT) = interpolator(c)(args.map(_.tree))
+    c.Expr[LValue[T]](generate[T](c)(None, q"$msg", None, argsT)(None, outputFormat.tree))
+  }
+
+  // Singular:
+
+  def singular[T: c.WeakTypeTag](c: Context)
+    (msg: c.Expr[String], args: c.Expr[(String, Any)]*)
+    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+    c.Expr[T](generate[T](c)(None, msg.tree, None, args.map(_.tree))(Some(lang.tree), outputFormat.tree))
+
+  def lazySingular[T: c.WeakTypeTag](c: Context)
+    (msg: c.Expr[String], args: c.Expr[(String, Any)]*)
+    (outputFormat: c.Expr[OutputFormat[T]]): c.Expr[LValue[T]] =
+    c.Expr[LValue[T]](generate[T](c)(None, msg.tree, None, args.map(_.tree))(None, outputFormat.tree))
+
+  def singularCtx[T: c.WeakTypeTag](c: Context)
+    (ctx: c.Expr[String], msg: c.Expr[String], args: c.Expr[(String, Any)]*)
+    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+    c.Expr[T](generate[T](c)(Some(ctx.tree), msg.tree, None, args.map(_.tree))(Some(lang.tree), outputFormat.tree))
+
+  def lazySingularCtx[T: c.WeakTypeTag](c: Context)
+    (ctx: c.Expr[String], msg: c.Expr[String], args: c.Expr[(String, Any)]*)
+    (outputFormat: c.Expr[OutputFormat[T]]): c.Expr[LValue[T]] =
+    c.Expr[LValue[T]](generate[T](c)(Some(ctx.tree), msg.tree, None, args.map(_.tree))(None, outputFormat.tree))
+
+  // Plural:
+
+  def plural[T: c.WeakTypeTag](c: Context)
+    (msg: c.Expr[String], msgPlural: c.Expr[String], n: c.Expr[Long], args: c.Expr[(String, Any)]*)
+    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+    c.Expr[T](generate[T](c)(None, msg.tree, Some(msgPlural.tree -> n.tree), args.map(_.tree))
+                            (Some(lang.tree), outputFormat.tree))
+
+  def lazyPlural[T: c.WeakTypeTag](c: Context)
+    (msg: c.Expr[String], msgPlural: c.Expr[String], n: c.Expr[Long], args: c.Expr[(String, Any)]*)
+    (outputFormat: c.Expr[OutputFormat[T]]): c.Expr[LValue[T]] =
+    c.Expr[LValue[T]](generate[T](c)(None, msg.tree, Some(msgPlural.tree -> n.tree), args.map(_.tree))
+                                    (None, outputFormat.tree))
+
+  def pluralCtx[T: c.WeakTypeTag](c: Context)
+    (ctx: c.Expr[String], msg: c.Expr[String], msgPlural: c.Expr[String], n: c.Expr[Long], args: c.Expr[(String, Any)]*)
+    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+    c.Expr[T](generate[T](c)(Some(ctx.tree), msg.tree, Some(msgPlural.tree -> n.tree), args.map(_.tree))
+                            (Some(lang.tree), outputFormat.tree))
+
+  def lazyPluralCtx[T: c.WeakTypeTag](c: Context)
+    (ctx: c.Expr[String], msg: c.Expr[String], msgPlural: c.Expr[String], n: c.Expr[Long], args: c.Expr[(String, Any)]*)
+    (outputFormat: c.Expr[OutputFormat[T]]): c.Expr[LValue[T]] =
+    c.Expr[LValue[T]](generate[T](c)(Some(ctx.tree), msg.tree, Some(msgPlural.tree -> n.tree), args.map(_.tree))
+                                    (None, outputFormat.tree))
+
+  // Macro internals:
+
+  /**
+    * A generic macro that extracts interpolation string and set of interpolation
+    * variables from string interpolator invocation.
+    *
+    * @param c Macro context
+    * @param args Arguments of interpolator
+    * @return (Extracted string, extracted variables)
+    */
+  private def interpolator(c: Context)(args: Seq[c.Tree]): (String, Seq[c.Tree]) = {
+    import c.universe._
+
+    // Extract raw interpolation parts
     val parts = c.prefix.tree match {
       case Apply(_, List(Apply(_, rawParts))) =>
         rawParts.map(stringLiteral(c)(_)).map(StringContext.treatEscapes)
+
       case _ =>
-        c.abort(c.enclosingPosition, "Failed to detect application context")
+        c.abort(c.enclosingPosition, s"failed to match prefix, got ${prettyPrint(c)(c.prefix.tree)}")
     }
 
     assert(parts.size == args.size + 1)
 
-    val inferredNames = args.map(_.tree).map {
+    // Try to infer names for simple variables
+    val inferredNames = args.map {
       case Ident(name: TermName) => Some(name.decodedName.toString)
       case Select(This(_), name: TermName) => Some(name.decodedName.toString)
       case _ => None
     }
 
-    val filtered: Seq[(String /* part */, String /* arg name */, c.Expr[Any] /* value */)] =
+    // Match the %(x) explicit variable name specifications in parts and get final variable names
+    val filtered: Seq[(String /* part */, String /* arg name */, c.Tree /* value */)] =
       for {
-        idx <- 0 until args.size
+        idx <- args.indices
         argName = inferredNames(idx)
         part = parts(idx + 1)
       } yield {
@@ -68,116 +136,160 @@ object Macros {
           (filtered, name, args(idx))
         } else {
           if (argName.isEmpty)
-            c.abort(c.enclosingPosition, s"No name is defined for part #$idx (${Compat.prettyPrint(c)(args(idx).tree)})")
+            c.abort(c.enclosingPosition, s"No name is defined for part #$idx (${Compat.prettyPrint(c)(args(idx))})")
 
           (part, argName.get, args(idx))
         }
       }
 
-    for ((name, vals) <- filtered.groupBy(_._2) if vals.exists(_ != vals.head))
-      c.abort(c.enclosingPosition, s"Duplicate variable name: $name")
-
-    val msgid = parts.head + filtered.map {
+    (parts.head + filtered.map {
       case (part, name, _) => s"%($name)$part"
-    }.mkString
-
-    val tr = filtered.groupBy(_._2).mapValues(_.head._3.tree)
-
-    generateSingular[T](c)(None, msgid, tr)(lang, outputFormat).asInstanceOf[c.Expr[T]]
+    }.mkString, filtered.map {
+      case (_, name, value) => q"($name, $value)"
+    })
   }
 
   /**
-    * The whole purpose of this macro, beside of extraction of strings, is to verify that all string interpolation
-    * variables are present and to omit insertion of `StringUtils.interpolate` if nothing is dynamic.
+    * A generic function to generate interpolation results. Other macros do nothing but call it.
+    *
+    * @param c Macro context
+    * @param ctxTree Optional tree with context argument
+    * @param msgTree Message argument
+    * @param pluralTree Optional with (plural message, n) arguments
+    * @param argsTree Supplied args as a trees
+    * @param lang Language tree that if present means instant evaluation
+    * @param outputFormat Tree representing `OutputFormat[T]` instance
+    * @return Tree representing an instance of `T` if language was present, or `LValue[T]` if
+    *         language was absent.
     */
-  def singular[T: c.WeakTypeTag]
-    (c: Context)
-    (msg: c.Expr[String], args: c.Expr[(String, Any)]*)
-    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+  private def generate[T: c.WeakTypeTag](c: Context)
+    (ctxTree: Option[c.Tree], msgTree: c.Tree, pluralTree: Option[(c.Tree, c.Tree)], argsTree: Seq[c.Tree])
+    (lang: Option[c.Tree], outputFormat: c.Tree): c.Tree =
   {
+    import c.universe._
 
-    val (msgid, vars) = verifyVariables(c)(msg, args, None)
+    // Extract literals:
+    val ctx = ctxTree.map(stringLiteral(c))
+    val msg = stringLiteral(c)(msgTree)
+    val plural = pluralTree.map { case (s, n) => stringLiteral(c)(s) -> n }
+    val args = argsTree.map(tupleLiteral(c)(_)) ++ (plural match {
+      case Some((_, n)) => Seq("n" -> n)
+      case None => Nil
+    })
 
-    generateSingular[T](c)(None, msgid, vars)(lang, outputFormat).asInstanceOf[c.Expr[T]]
+    // Call message extractor:
+    plural match {
+      case None => MessageExtractor.singular(c)(ctx, msg)
+      case Some((pl, _)) => MessageExtractor.plural(c)(ctx, msg, pl)
+    }
+
+    // Verify variables consistency:
+    def verifyVariables(s: String): Unit = {
+      val varsArg = args.map(_._1).toSet
+      val varsStr = StringUtils.extractVariables(s).toSet
+
+      for (v <- (varsArg diff varsStr) ++ (varsStr diff varsArg))
+        if (varsArg.contains(v))
+          c.abort(c.enclosingPosition, s"variable `$v` is not present in interpolation string")
+        else
+          c.abort(c.enclosingPosition, s"variable `$v` is not present at arguments section")
+    }
+
+    for ((v, xs) <- args.groupBy(_._1) if xs.length > 1)
+      c.abort(c.enclosingPosition, s"duplicate variable `$v`")
+
+    verifyVariables(msg)
+    for ((pl, _) <- plural)
+      verifyVariables(pl)
+
+    /**
+      * Given a language tree `lng`, creates a tree that will translate given message.
+      */
+    def translate(lng: c.Tree): c.Tree = {
+      val str = plural match {
+        case None => q"$lng.singular(..${ctx.toSeq}, $msg)"
+        case Some((pl, n)) => q"$lng.plural(..${ctx.toSeq}, $msg, $pl, $n)"
+      }
+
+      if (args.isEmpty)
+        q"$outputFormat.convert($str)"
+      else {
+        val argsT = args.map { case (k, v) => q"$k -> $v" }
+        q"_root_.ru.makkarpov.scalingua.StringUtils.interpolate[${weakTypeOf[T]}]($str, ..$argsT)"
+      }
+    }
+
+    lang match {
+      case Some(lng) => translate(lng)
+      case None =>
+        val name = termName(c)("lng")
+        q"""
+          new _root_.ru.makkarpov.scalingua.LValue(
+            ($name: _root_.ru.makkarpov.scalingua.Language) => ${translate(q"$name")}
+          )
+        """
+    }
   }
 
   /**
-    * The whole purpose of this macro, beside of extraction of strings, is to verify that all string interpolation
-    * variables are present and to omit insertion of `StringUtils.interpolate` if nothing is dynamic.
+    * Matches string against string literal pattern and return literal string if matched. Currently supported
+    * literal types:
+    *
+    * 1) Plain literals like `"123"`
+    * 2) Strip margin literals like `""" ... """.stripMargin`
+    * 3) Strip margin literals with custom margin character like `""" ... """.stripMargin('#')`
+    *
+    * @param c Macro context
+    * @param e Tree to match
+    * @return Extracted string literal
     */
-  def singularCtx[T: c.WeakTypeTag]
-    (c: Context)
-    (ctx: c.Expr[String], msg: c.Expr[String], args: c.Expr[(String, Any)]*)
-    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
-  {
+  private def stringLiteral(c: Context)(e: c.Tree): String = {
+    import c.universe._
 
-    val ctxStr = stringLiteral(c)(ctx.tree)
-    val (msgid, vars) = verifyVariables(c)(msg, args, None)
+    e match {
+      case Literal(Constant(s: String)) => s
 
-    generateSingular[T](c)(Some(ctxStr), msgid, vars)(lang, outputFormat).asInstanceOf[c.Expr[T]]
+      case q"scala.this.Predef.augmentString($str).stripMargin" =>
+        str match {
+          case Literal(Constant(s: String)) => s.stripMargin.trim
+          case _ => c.abort(c.enclosingPosition, s"Expected string literal, got instead ${prettyPrint(c)(str)}")
+        }
+
+      case q"scala.this.Predef.augmentString($str).stripMargin($ch)" =>
+        (str, ch) match {
+          case (Literal(Constant(s: String)), Literal(Constant(c: Char))) => s.stripMargin(c).trim
+          case (Literal(Constant(s: String)), _) =>
+            c.abort(c.enclosingPosition, s"Expected character literal, got instead ${prettyPrint(c)(ch)}")
+          case _ => c.abort(c.enclosingPosition, s"Expected string literal, got instead ${prettyPrint(c)(str)}")
+        }
+
+      case _ =>
+        c.abort(c.enclosingPosition, s"Expected string literal or multi-line string, got instead ${prettyPrint(c)(e)}")
+    }
   }
 
   /**
-    * The whole purpose of this macro, beside of extraction of strings, is to verify that all string interpolation
-    * variables are present and to omit insertion of `StringUtils.interpolate` if nothing is dynamic.
+    * Matches string against tuple `(String, T)` pattern and returns extracted string literal and tuple value.
+    * Currently supported literal types:
+    *
+    * 1) Plain literals like `("1", x)`
+    * 2) ArrowAssoc literals like `"1" -> x`
+    *
+    * @param c Macro context
+    * @param e Tree to match
+    * @return Extracted tuple literal parts
     */
-  def plural[T: c.WeakTypeTag]
-    (c: Context)
-    (msg: c.Expr[String], msgPlural: c.Expr[String], n: c.Expr[Long], args: c.Expr[(String, Any)]*)
-    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
-  {
+  private def tupleLiteral(c: Context)(e: c.Tree): (String, c.Tree) = {
+    import c.universe._
 
-    val (msgid, vars) = verifyVariables(c)(msg, args, Some(n))
-    val (msgidPlural, _) = verifyVariables(c)(msgPlural, args, Some(n))
+    val (a, b) = e match {
+      case q"scala.this.Predef.ArrowAssoc[$aType]($ax).->[$bType]($bx)" => (ax, bx) // 2.11
+      case q"scala.this.Predef.any2ArrowAssoc[$aType]($ax).->[$bType]($bx)" => (ax, bx) // 2.10
+      case q"($ax, $bx)" => (ax, bx)
+      case _ =>
+        c.abort(c.enclosingPosition, s"Expected tuple definition `x -> y` or `(x, y)`, got instead ${prettyPrint(c)(e)}")
+    }
 
-    generatePlural[T](c)(None, msgid, msgidPlural, n, vars)(lang, outputFormat).asInstanceOf[c.Expr[T]]
-  }
-
-  /**
-    * The whole purpose of this macro, beside of extraction of strings, is to verify that all string interpolation
-    * variables are present and to omit insertion of `StringUtils.interpolate` if nothing is dynamic.
-    */
-  def pluralCtx[T: c.WeakTypeTag]
-    (c: Context)
-    (ctx: c.Expr[String], msg: c.Expr[String], msgPlural: c.Expr[String], n: c.Expr[Long], args: c.Expr[(String, Any)]*)
-    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
-  {
-
-    val ctxStr = stringLiteral(c)(ctx.tree)
-    val (msgid, vars) = verifyVariables(c)(msg, args, Some(n))
-    val (msgidPlural, _) = verifyVariables(c)(msgPlural, args, Some(n))
-
-    generatePlural[T](c)(Some(ctxStr), msgid, msgidPlural, n, vars)(lang, outputFormat).asInstanceOf[c.Expr[T]]
-  }
-
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  private def verifyVariables
-    (c: Context)
-    (msg: c.Expr[String], args: Seq[c.Expr[(String, Any)]], n: Option[c.Expr[Long]]): (String, Map[String, c.Tree]) =
-  {
-    val msgStr = stringLiteral(c)(msg.tree)
-    val vars = StringUtils.extractVariables(msgStr)
-
-    var exprs = args.map(tupleLiteral(c)(_))
-
-    for (nx <- n)
-      exprs :+= "n" -> nx
-
-    // Test uniqueness of variables:
-    for ((v, _) <- exprs.groupBy(_._1).filter(_._2.size > 1))
-      c.abort(c.enclosingPosition, s"Duplicate variable `$v`")
-
-    // Test difference of variables
-
-    val argVars = exprs.map(_._1).toSet
-
-    for (n <- (vars diff argVars) ++ (argVars diff vars))
-      if (vars.contains(n))
-        c.abort(c.enclosingPosition, s"Variable `$n` is not present at argument list")
-      else
-        c.abort(c.enclosingPosition, s"Variable `$n` is not present at interpolation string")
-
-    (msgStr, Map(exprs:_*).mapValues(_.tree).asInstanceOf[Map[String, c.Tree]])
+    (stringLiteral(c)(a), b)
   }
 }

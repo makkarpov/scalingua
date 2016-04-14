@@ -18,24 +18,40 @@ package ru.makkarpov.scalingua
 
 import scala.language.experimental.macros
 
-/**
-  * Dynamic translation functions and the basic set of macro-based interpolators and translation functions.
-  */
 object I18n {
   implicit class StringInterpolator(val sc: StringContext) extends AnyVal {
     def t(args: Any*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
       macro Macros.interpolate[String]
+
+    def lt(args: Any*)(implicit outputFormat: OutputFormat[String]): LValue[String] =
+      macro Macros.lazyInterpolate[String]
   }
 
   def t(msg: String, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
     macro Macros.singular[String]
 
+  def lt(msg: String, args: (String, Any)*)(implicit outputFormat: OutputFormat[String]): LValue[String] =
+    macro Macros.lazySingular[String]
+
   def tc(ctx: String, msg: String, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
     macro Macros.singularCtx[String]
 
-  def p(msg: String, msgPlural: String, n: Long, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
+  def ltc(ctx: String, msg: String, args: (String, Any)*)(implicit outputFormat: OutputFormat[String]): LValue[String] =
+    macro Macros.lazySingularCtx[String]
+
+  def p(msg: String, msgPlural: String, n: Long, args: (String, Any)*)
+       (implicit lang: Language, outputFormat: OutputFormat[String]): String =
     macro Macros.plural[String]
 
-  def pc(ctx: String, msg: String, msgPlural: String, n: Long, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
+  def lp(msg: String, msgPlural: String, n: Long, args: (String, Any)*)
+        (implicit outputFormat: OutputFormat[String]): LValue[String] =
+    macro Macros.lazyPlural[String]
+
+  def pc(ctx: String, msg: String, msgPlural: String, n: Long, args: (String, Any)*)
+       (implicit lang: Language, outputFormat: OutputFormat[String]): String =
     macro Macros.pluralCtx[String]
+
+  def lpc(ctx: String, msg: String, msgPlural: String, n: Long, args: (String, Any)*)
+        (implicit outputFormat: OutputFormat[String]): LValue[String] =
+    macro Macros.lazyPluralCtx[String]
 }

@@ -141,5 +141,10 @@ class MacroTest extends FlatSpec with Matchers {
     t("""1
         |2
       """.stripMargin('#')) shouldBe "{s:1\n        |2}"
+
+    t("1".stripMargin('1')) shouldBe "{s:}"
+
+    """ val c = '1'; t("1".stripMargin(c)) """ shouldNot compile
+    """ val s = "1"; t(s.stripMargin('1')) """ shouldNot compile
   }
 }

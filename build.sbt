@@ -23,8 +23,9 @@ val common = Seq(
 
   licenses := Seq("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/makkarpov/scalingua")),
+  organizationHomepage := Some(url("https://github.com/makkarpov")),
   scmInfo := Some(ScmInfo(
-    browseUrl = new URL("https://github.com/makkarpov/scalingua"),
+    browseUrl = url("https://github.com/makkarpov/scalingua"),
     connection = "scm:git://github.com/makkarpov/scalingua.git"
   )),
 

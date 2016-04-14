@@ -16,8 +16,16 @@
 
 package ru.makkarpov.scalingua
 
-object Compat {
-  type Context = scala.reflect.macros.Context
-  def prettyPrint(c: Context)(e: c.Tree): String = c.universe.show(e)
-  def termName(c: Context)(s: String): c.TermName = c.universe.newTermName(c.fresh(s))
+import scala.language.implicitConversions
+
+object LValue {
+  implicit def unwrapLvalue[T](lValue: LValue[T])(implicit lang: Language): T = lValue.resolve
+}
+
+/**
+  * Value that can be translated lazily (e.g. for definitions whose target language is not known a priori)
+  */
+class LValue[T](func: Language => T) {
+  def resolve(implicit lang: Language) = func(lang)
+  override def toString: String = s"LValue(${func(Language.English)})"
 }
