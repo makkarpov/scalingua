@@ -19,24 +19,26 @@ package ru.makkarpov.scalingua
 import scala.language.experimental.macros
 
 object I18n {
+  type LString = LValue[String]
+
   implicit class StringInterpolator(val sc: StringContext) extends AnyVal {
     def t(args: Any*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
       macro Macros.interpolate[String]
 
-    def lt(args: Any*)(implicit outputFormat: OutputFormat[String]): LValue[String] =
+    def lt(args: Any*)(implicit outputFormat: OutputFormat[String]): LString =
       macro Macros.lazyInterpolate[String]
   }
 
   def t(msg: String, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
     macro Macros.singular[String]
 
-  def lt(msg: String, args: (String, Any)*)(implicit outputFormat: OutputFormat[String]): LValue[String] =
+  def lt(msg: String, args: (String, Any)*)(implicit outputFormat: OutputFormat[String]): LString =
     macro Macros.lazySingular[String]
 
   def tc(ctx: String, msg: String, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
     macro Macros.singularCtx[String]
 
-  def ltc(ctx: String, msg: String, args: (String, Any)*)(implicit outputFormat: OutputFormat[String]): LValue[String] =
+  def ltc(ctx: String, msg: String, args: (String, Any)*)(implicit outputFormat: OutputFormat[String]): LString =
     macro Macros.lazySingularCtx[String]
 
   def p(msg: String, msgPlural: String, n: Long, args: (String, Any)*)
@@ -44,7 +46,7 @@ object I18n {
     macro Macros.plural[String]
 
   def lp(msg: String, msgPlural: String, n: Long, args: (String, Any)*)
-        (implicit outputFormat: OutputFormat[String]): LValue[String] =
+        (implicit outputFormat: OutputFormat[String]): LString =
     macro Macros.lazyPlural[String]
 
   def pc(ctx: String, msg: String, msgPlural: String, n: Long, args: (String, Any)*)
@@ -52,6 +54,6 @@ object I18n {
     macro Macros.pluralCtx[String]
 
   def lpc(ctx: String, msg: String, msgPlural: String, n: Long, args: (String, Any)*)
-        (implicit outputFormat: OutputFormat[String]): LValue[String] =
+        (implicit outputFormat: OutputFormat[String]): LString =
     macro Macros.lazyPluralCtx[String]
 }
