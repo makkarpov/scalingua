@@ -23,6 +23,7 @@ val common = Seq(
 
   licenses := Seq("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/makkarpov/scalingua")),
+  organizationName := "Maxim Karpov",
   organizationHomepage := Some(url("https://github.com/makkarpov")),
   scmInfo := Some(ScmInfo(
     browseUrl = url("https://github.com/makkarpov/scalingua"),
@@ -52,13 +53,17 @@ val common = Seq(
 lazy val core = project
   .settings(common:_*)
   .settings(
-    name := "scalingua-core"
+    name := "Scalingua Core",
+    normalizedName := "scalingua-core",
+    description := "A minimal set of runtime classes for Scalingua"
   )
 
 lazy val scalingua = project
   .settings(common:_*)
   .settings(
-    name := "scalingua",
+    name := "Scalingua",
+    normalizedName := "scalingua",
+    description := "A simple gettext-like internationalization library for Scala",
 
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
@@ -81,7 +86,9 @@ lazy val plugin = project
   .in(file("sbt-plugin"))
   .settings(common:_*)
   .settings(
-    name := "scalingua-sbt",
+    name := "Scalingua SBT plugin",
+    normalizedName := "scalingua-sbt",
+    description := "SBT plugin that compiles locales, manages locations of *.pot files and so on",
 
     crossPaths := false,
     scalaVersion := scala.util.Properties.versionNumberString,

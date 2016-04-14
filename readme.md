@@ -25,12 +25,12 @@ To use Scalingua in your project you need to include it in following way:
 
 **project/plugins.sbt**:
     
-    addSbtPlugin("maven" % "id" % "pending")
+    addSbtPlugin("ru.makkarpov" % "scalingua-sbt" % "0.2")
 
 **build.sbt**:
 
     enablePlugin(Scalingua)
-    libraryDependencies += "maven" %% "id" % "pending"
+    libraryDependencies += "ru.makkarpov" %% "scalingua" % "0.2"
 
 **Example.scala**:
 
