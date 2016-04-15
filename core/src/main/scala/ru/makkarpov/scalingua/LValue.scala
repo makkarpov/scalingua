@@ -25,7 +25,8 @@ object LValue {
 /**
   * Value that can be translated lazily (e.g. for definitions whose target language is not known a priori)
   */
-class LValue[T](func: Language => T) {
+class LValue[+T](func: Language => T) extends (Language => T) {
+  def apply(lang: Language): T = func(lang)
   def resolve(implicit lang: Language) = func(lang)
   def genericResolve = func(Language.English)
   override def toString: String = s"LValue($genericResolve)"
