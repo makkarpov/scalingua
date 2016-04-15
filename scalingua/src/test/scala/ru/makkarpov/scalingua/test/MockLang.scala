@@ -14,19 +14,15 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package ru.makkarpov.scalingua
+package ru.makkarpov.scalingua.test
 
-import scala.language.implicitConversions
+import ru.makkarpov.scalingua.{Language, LanguageId}
 
-object LValue {
-  implicit def unwrapLvalue[T](lValue: LValue[T])(implicit lang: Language): T = lValue.resolve
-}
-
-/**
-  * Value that can be translated lazily (e.g. for definitions whose target language is not known a priori)
-  */
-class LValue[T](func: Language => T) {
-  def resolve(implicit lang: Language) = func(lang)
-  def genericResolve = func(Language.English)
-  override def toString: String = s"LValue($genericResolve)"
+class MockLang(s: String) extends Language {
+  override def id: LanguageId = LanguageId("mock", "p" + s)
+  override def singular(msgid: String): String = s"{s$s:$msgid}"
+  override def singular(msgctx: String, msgid: String): String = s"{sc$s:$msgctx:$msgid}"
+  override def plural(msgid: String, msgidPlural: String, n: Long): String = s"{p$s:$msgid:$msgidPlural:$n}"
+  override def plural(msgctx: String, msgid: String, msgidPlural: String, n: Long): String =
+    s"{pc$s:$msgctx:$msgid:$msgidPlural:$n}"
 }

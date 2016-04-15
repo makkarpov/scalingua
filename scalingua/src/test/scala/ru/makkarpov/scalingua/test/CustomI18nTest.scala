@@ -14,19 +14,38 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package ru.makkarpov.scalingua
+package ru.makkarpov.scalingua.test
 
-import scala.language.implicitConversions
+import org.scalatest.{FlatSpec, Matchers}
+import ru.makkarpov.scalingua.{I18n, Language, Macros, OutputFormat}
 
-object LValue {
-  implicit def unwrapLvalue[T](lValue: LValue[T])(implicit lang: Language): T = lValue.resolve
-}
+import scala.language.experimental.macros
 
-/**
-  * Value that can be translated lazily (e.g. for definitions whose target language is not known a priori)
-  */
-class LValue[T](func: Language => T) {
-  def resolve(implicit lang: Language) = func(lang)
-  def genericResolve = func(Language.English)
-  override def toString: String = s"LValue($genericResolve)"
+class CustomI18nTest extends FlatSpec with Matchers {
+  case class CStr(s: String)
+
+  implicit val CStrFormat = new OutputFormat[CStr] {
+    override def convert(s: String): CStr = CStr(s"C{$s}")
+    override def escape(s: String): String = s"[$s]"
+  }
+
+  object CustomI18n extends I18n {
+    def ct(msg: String, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[CStr]): CStr =
+      macro Macros.singular[CStr]
+  }
+
+  implicit val mockLang = new MockLang("")
+
+  import CustomI18n._
+
+  it should "handle custom I18n classes via traits" in {
+    t"Hello, world!" shouldBe "{s:Hello, world!}"
+  }
+
+  it should "handle custom methods in I18n classes" in {
+    ct("Hello, world!").s shouldBe "C{{s:Hello, world!}}"
+    ct("Hello, %(what)!", "what" -> "world").s shouldBe "C{{s:Hello, [world]!}}"
+
+    """ ct("Hello, %(x)!", "y" -> 1) """ shouldNot compile
+  }
 }

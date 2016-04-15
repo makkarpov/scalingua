@@ -21,16 +21,7 @@ import ru.makkarpov.scalingua.{Language, LanguageId}
 import ru.makkarpov.scalingua.I18n._
 
 class MacroTest extends FlatSpec with Matchers {
-  implicit val mockLang = new Language {
-    override def singular(msgid: String): String = s"{s:$msgid}"
-    override def singular(msgctx: String, msgid: String): String = s"{sc:$msgctx:$msgid}"
-
-    override def plural(msgid: String, msgidPlural: String, n: Long): String = s"{p:$msgid:$msgidPlural:$n}"
-    override def plural(msgctx: String, msgid: String, msgidPlural: String, n: Long): String =
-      s"{pc:$msgctx:$msgid:$msgidPlural:$n}"
-
-    override def id: LanguageId = LanguageId("mo", "CK")
-  }
+  implicit val mockLang = new MockLang("")
 
   it should "handle string interpolations" in {
     t"Hello, world!" shouldBe "{s:Hello, world!}"

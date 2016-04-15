@@ -18,18 +18,8 @@ package ru.makkarpov.scalingua.test
 
 import org.scalatest.{FlatSpec, Matchers}
 import ru.makkarpov.scalingua.I18n._
-import ru.makkarpov.scalingua.{Language, LanguageId}
 
 class IStringTest extends FlatSpec with Matchers {
-  class MockLang(s: String) extends Language {
-    override def id: LanguageId = LanguageId("mock", "p" + s)
-    override def singular(msgid: String): String = s"$s:$msgid"
-    override def singular(msgctx: String, msgid: String): String = s"$s:$msgctx:$msgid"
-    override def plural(msgid: String, msgidPlural: String, n: Long): String = s"$s:$msgid:$msgidPlural:$n"
-    override def plural(msgctx: String, msgid: String, msgidPlural: String, n: Long): String =
-      s"$s:$msgctx:$msgid:$msgidPlural:$n"
-  }
-
   val mockLang1 = new MockLang("1")
   val mockLang2 = new MockLang("2")
   val mockLang3 = new MockLang("3")
@@ -37,8 +27,8 @@ class IStringTest extends FlatSpec with Matchers {
   it should "handle internationalized strings when surrounding implicit lang is not present" in {
     val t = lt"Hello, world!"
 
-    t.resolve(mockLang1) shouldBe "1:Hello, world!"
-    t.resolve(mockLang2) shouldBe "2:Hello, world!"
+    t.resolve(mockLang1) shouldBe "{s1:Hello, world!}"
+    t.resolve(mockLang2) shouldBe "{s2:Hello, world!}"
   }
 
   it should "handle internationalized strings when implicit lang is present" in {
@@ -46,8 +36,8 @@ class IStringTest extends FlatSpec with Matchers {
 
     val t = lt"12345"
 
-    t.resolve(mockLang1) shouldBe "1:12345"
-    t.resolve(mockLang2) shouldBe "2:12345"
-    t.resolve shouldBe "3:12345"
+    t.resolve(mockLang1) shouldBe "{s1:12345}"
+    t.resolve(mockLang2) shouldBe "{s2:12345}"
+    t.resolve shouldBe "{s3:12345}"
   }
 }

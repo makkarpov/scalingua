@@ -11,7 +11,7 @@ enablePlugins(CrossPerProjectPlugin)
 
 val common = Seq(
   organization := "ru.makkarpov",
-  version := "0.2",
+  version := "0.3",
 
   crossPaths := true,
   scalaVersion := "2.10.4",

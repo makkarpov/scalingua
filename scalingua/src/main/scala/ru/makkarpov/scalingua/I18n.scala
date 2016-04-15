@@ -17,17 +17,15 @@
 package ru.makkarpov.scalingua
 
 import scala.language.experimental.macros
+import scala.language.implicitConversions
 
-object I18n {
+trait I18n {
   type LString = LValue[String]
 
-  implicit class StringInterpolator(val sc: StringContext) extends AnyVal {
-    def t(args: Any*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
-      macro Macros.interpolate[String]
-
-    def lt(args: Any*)(implicit outputFormat: OutputFormat[String]): LString =
-      macro Macros.lazyInterpolate[String]
-  }
+  // Since I want to keep StringInterpolator AnyVal, I will extract it to a place where there is no path-dependency
+  // and provide here only implicit conversion function.
+  implicit def stringContext2Interpolator(sc: StringContext): I18n.StringInterpolator =
+    new I18n.StringInterpolator(sc)
 
   def t(msg: String, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
     macro Macros.singular[String]
@@ -56,4 +54,14 @@ object I18n {
   def lpc(ctx: String, msg: String, msgPlural: String, n: Long, args: (String, Any)*)
         (implicit outputFormat: OutputFormat[String]): LString =
     macro Macros.lazyPluralCtx[String]
+}
+
+object I18n extends I18n {
+  class StringInterpolator(val sc: StringContext) extends AnyVal {
+    def t(args: Any*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
+    macro Macros.interpolate[String]
+
+    def lt(args: Any*)(implicit outputFormat: OutputFormat[String]): LString =
+    macro Macros.lazyInterpolate[String]
+  }
 }
