@@ -65,6 +65,11 @@ object PoFile {
                     .filter(x => x.nonEmpty && !x.startsWith(header)).buffered
 
     def readEntry(): (String, MultipartString) = {
+      if (!lines.hasNext) {
+        input.close()
+        throw new IllegalArgumentException("Premature end of stream")
+      }
+
       val entryLiteral(cmd, stringHead) = lines.next()
       var done = false
       var strings = Seq(StringUtils.unescape(stringHead))
@@ -74,7 +79,7 @@ object PoFile {
           lines.next() // consume
         case _ => done = true
       }
-      (cmd, MultipartString(strings))
+      (cmd, MultipartString(strings:_*))
     }
 
     def peekEntry(): Option[String] = {
@@ -93,13 +98,16 @@ object PoFile {
       var locations = Seq.empty[MessageLocation]
       var flags = MessageFlag.ValueSet.empty
 
-      while (lineAnyHeader.findFirstIn(lines.head).isDefined) lines.next() match {
+      while (lines.hasNext && lineAnyHeader.findFirstIn(lines.head).isDefined) lines.next() match {
         case lineTrComment(cmt) => trComments :+= cmt
         case lineExComment(cmt) => exComments :+= cmt
         case lineLocation(fle, lne) => locations :+= MessageLocation(fle, lne.toInt)
         case lineFlags(flgStr) =>
           for (s <- flgStr.split(",").map(_.trim.toLowerCase))
-            flags += MessageFlag.withName(s)
+            flags += MessageFlag.values.find(_.toString == s).getOrElse {
+              throw new IllegalArgumentException(s"Undefined message flag: '$s'")
+            }
+        case x => throw new IllegalArgumentException(s"Incorrect header line: '$x'")
       }
 
       MessageHeader(trComments, exComments, locations, flags)
@@ -114,12 +122,19 @@ object PoFile {
       try {
         val hdr = readHeader()
 
+        if (!lines.hasNext) {
+          input.close()
+          return null
+        }
+
         val (msgCtx, msgId) = readEntry() match {
           case ("msgctxt", ctxt) =>
             val ("msgid", id) = readEntry()
             (Some(ctxt), id)
 
           case ("msgid", id) => (None, id)
+
+          case (x, _) => throw new IllegalArgumentException(s"Either `msgctxt` or `msgid` expected, got `$x`")
         }
 
         peekEntry() match {

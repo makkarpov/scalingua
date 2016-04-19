@@ -17,11 +17,13 @@
 package ru.makkarpov.scalingua.pofile
 
 object MultipartString {
-  val empty = MultipartString(Nil)
-  def apply(s: String): MultipartString = MultipartString(s :: Nil)
+  val empty = new MultipartString()
+
+  // Method is kept to allow use of xx.map(MultipartString.apply)
+  def apply(s: String): MultipartString = new MultipartString(s)
 }
 
-case class MultipartString(parts: Seq[String]) {
+case class MultipartString(parts: String*) {
   def merge = parts.mkString
   def isEmpty = parts.forall(_.isEmpty)
 
