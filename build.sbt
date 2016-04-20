@@ -82,6 +82,24 @@ lazy val scalingua = project
   )
   .dependsOn(core)
 
+lazy val play = project
+  .settings(common:_*)
+  .settings(
+    name := "Scalingua Play! module",
+    normalizedName := "scalingua-play",
+    description := "An integration module for Play! Framework",
+
+    // Recent versions of Play! supports only recent version of Scala.
+    // We should keep `crossPath` to keep naming consistent
+    scalaVersion := "2.11.7",
+    crossScalaVersions := Seq(scalaVersion.value),
+
+    libraryDependencies ++= Seq(
+      "com.typesafe.play" %% "twirl-api" % "1.1.1",
+      "com.typesafe.play" %% "play" % "2.5.0"
+    )
+  ).dependsOn(scalingua)
+
 lazy val plugin = project
   .in(file("sbt-plugin"))
   .settings(common:_*)

@@ -3,6 +3,10 @@ sudo: false
 scala:
  - 2.11.7
 
+# Play 2.5.0 requires Java 8
+jdk:
+ - oraclejdk8
+
 script:
  - sbt +test
  - sbt "set version += \"-SNAPSHOT\"" +publishLocal scripted
