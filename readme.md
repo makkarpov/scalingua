@@ -1,9 +1,9 @@
-Scalingua [![Build Status](https://travis-ci.org/makkarpov/scalingua.svg?branch=master)](https://travis-ci.org/makkarpov/scalingua) [![Join the chat at https://gitter.im/makkarpov/scalingua](https://badges.gitter.im/makkarpov/scalingua.svg)](https://gitter.im/makkarpov/scalingua?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+Scalingua [![Build Status](https://travis-ci.org/makkarpov/scalingua.svg?branch=master)](https://travis-ci.org/makkarpov/scalingua) [![Join the chat at https://gitter.im/makkarpov/scalingua](https://badges.gitter.im/makkarpov/scalingua.svg)](https://gitter.im/makkarpov/scalingua?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Latest version 0.3](https://img.shields.io/badge/version-0.3-yellow.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22ru.makkarpov%22%20AND%20v%3A%220.3%22)
 =========
 
-Have you ever wondered that there is no `gettext`-like library for Scala? **Scalingua** is here to fix it! It comes with
-lightweight runtime library and full-featured compile-time macros and SBT plugin that will combine the powers of `gettext` 
-and `Scala` in one place.
+Have you ever wondered that there is no **gettext**-like library for Scala? **Scalingua** is here to fix it! It comes with
+lightweight runtime library and full-featured compile-time macros and SBT plugin that will combine the powers of **gettext** 
+and **Scala** in one place.
 
 Scalingua consists of four modules:
 
