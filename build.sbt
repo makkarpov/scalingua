@@ -18,6 +18,8 @@ val common = Seq(
   crossScalaVersions := Seq("2.10.4", "2.11.7"),
   scalacOptions ++= Seq( "-Xfatal-warnings", "-feature", "-deprecation" ),
 
+  libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6" % Test,
+
   publishArtifact in Test := false,
   publishMavenStyle := true,
 
@@ -66,8 +68,7 @@ lazy val scalingua = project
     description := "A simple gettext-like internationalization library for Scala",
 
     libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
-      "org.scalatest" %% "scalatest" % "2.2.6" % Test
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value
     ),
 
     libraryDependencies ++= {

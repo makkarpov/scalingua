@@ -57,30 +57,11 @@ trait I18n extends scalingua.I18n {
   // too, we will have enough information to skip unsupported languages and return supported
   // one with respect to priority.
 
-  implicit def requestHeader2Language(implicit rq: RequestHeader, msg: Messages): Language = {
-    val langs = (for {
-      value0 <- rq.headers(HeaderNames.ACCEPT_LANGUAGE).split(',')
-      value = value0.trim
-    } yield {
-      RequestHeader.qPattern.findFirstMatchIn(value) match {
-        case Some(m) => (m.group(1).toDouble, m.before.toString)
-        case None => (1.0, value) // “The default value is q=1.”
-      }
-    }).sortBy(_._1).iterator
+  implicit def requestHeader2Language(implicit rq: RequestHeader, msg: Messages): Language =
+    PlayUtils.languageFromAccept(rq.headers(HeaderNames.ACCEPT_LANGUAGE))
 
-    while (langs.hasNext) {
-      val (_, id) = langs.next()
-      val lng = LanguageId.get(id)
-
-      if (lng.isDefined && msg.contains(lng.get))
-        return msg(lng.get)
-    }
-
-    Language.English
-  }
-
-  implicit def stringContext2Interpolator1(sc: StringContext): I18n.StringInterpolator =
-    new I18n.StringInterpolator(sc)
+  implicit def stringContext2Interpolator1(sc: StringContext): PlayUtils.StringInterpolator =
+    new PlayUtils.StringInterpolator(sc)
 
   def th(msg: String, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[Html]): Html =
     macro Macros.singular[Html]
@@ -111,12 +92,4 @@ trait I18n extends scalingua.I18n {
     macro Macros.lazyPluralCtx[Html]
 }
 
-object I18n extends I18n {
-  class StringInterpolator(val sc: StringContext) extends AnyVal {
-    def h(args: Any*)(implicit lang: Language, outputFormat: OutputFormat[Html]): Html =
-      macro Macros.interpolate[Html]
-
-    def lh(args: Any*)(implicit outputFormat: OutputFormat[Html]): LHtml =
-      macro Macros.lazyInterpolate[Html]
-  }
-}
+object I18n extends I18n
