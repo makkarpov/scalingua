@@ -18,13 +18,12 @@ package ru.makkarpov.scalingua.extract
 
 import java.io.IOException
 
-import ru.makkarpov.scalingua.Compat._
 import ru.makkarpov.scalingua.extract.ExtractorSession.MutableMessage
 import ru.makkarpov.scalingua.pofile._
 
 import scala.collection.mutable
-import scala.reflect.internal.Phase
 import scala.reflect.api.Position
+import scala.reflect.internal.{NoPhase, Phase}
 import scala.reflect.macros.Universe
 
 object ExtractorSession {
@@ -82,24 +81,57 @@ class ExtractorSession(val global: Universe, setts: ExtractorSettings) {
    */
   try {
     val symbolTable = Class.forName("scala.reflect.internal.SymbolTable")
-
-    // Get current phase of the compiler and save `next` pointer of it.
     val currentPhase = symbolTable.getMethod("phase").invoke(global).asInstanceOf[Phase]
-    val next = currentPhase.next
 
-    if (next.name == "save-translations")
-      throw new IOException("Attempting to append phase twice!")
+    def allPhases: Seq[Phase] = {
+      val r = Seq.newBuilder[Phase]
+      var c = currentPhase
 
-    // Append a new phase after current.
-    val own = new Phase(currentPhase) {
-      override def name: String = "save-translations"
-      override def run(): Unit = ExtractorSession.this.finish()
+      while (c.prev != NoPhase)
+        c = c.prev
+
+      do {
+        r += c
+        c = c.next
+      } while (c.hasNext)
+
+      r.result()
     }
 
-    // Restore phase chain:
-    val nx = classOf[Phase].getDeclaredMethods.find(_.getName.contains("nx_$eq")).getOrElse(sys.error("Cannot find `nx_$eq` method!"))
-    nx.setAccessible(true)
-    nx.invoke(own, next)
+    def insertBefore(next: Phase): Unit = {
+      val prev = next.prev
+
+      if (prev.name == "save-translations")
+        throw new IOException("Attempting to append phase twice!")
+
+      val own = new Phase(prev) {
+        override def name: String = "save-translations"
+        override def run(): Unit = ExtractorSession.this.finish()
+      }
+
+      // Now phases have correct pointers:
+      //   own.prev = prev
+      //   prev.next = own
+      // To be adjusted:
+      //   next.prev -> own
+      //   own.next -> next
+
+      val nx = classOf[Phase].getDeclaredMethods.find(_.getName.contains("nx_$eq")).getOrElse(sys.error("Cannot find `nx_$eq` method!"))
+      nx.setAccessible(true)
+      nx.invoke(own, next)
+
+      // Seems to be unnecessary, because no-one refers `prev` pointer.
+//      val pw = classOf[Phase].getDeclaredField("prev")
+//      pw.setAccessible(true)
+//
+//      val mods = classOf[Field].getDeclaredField("modifiers")
+//      mods.setAccessible(true)
+//      mods.setInt(pw, pw.getModifiers & ~Modifier.FINAL)
+//
+//      pw.set(next, own)
+    }
+
+    insertBefore(allPhases.find(_.name == "jvm").get)
   } catch {
     case t: Throwable =>
       Console.err.println(

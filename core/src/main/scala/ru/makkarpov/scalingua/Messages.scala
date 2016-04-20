@@ -31,6 +31,22 @@ object Messages {
       case e: Exception =>
         throw new RuntimeException(s"Failed to load compiled languages from package '$pkg'", e)
     }
+
+  /**
+    * Loads all available languages that are compiled by SBT plugin in context of specified class loader
+    *
+    * @param ctx ClassLoader to use
+    * @param pkg Package to seek in. Must be equal to `localePackage` SBT setting.
+    * @return A loaded `Messages`
+    */
+  def compiledContext(ctx: ClassLoader, pkg: String = "locales"): Messages =
+    try {
+      val cls = ctx.loadClass(pkg + (if (pkg.nonEmpty) "." else "") + "Languages$")
+      cls.getField("MODULE$").get(null).asInstanceOf[Messages]
+    } catch {
+      case e: Exception =>
+        throw new RuntimeException(s"Failed to load compield languages from package '$pkg' in context of $ctx")
+    }
 }
 
 /**

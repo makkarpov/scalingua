@@ -59,9 +59,9 @@ trait I18n {
 object I18n extends I18n {
   class StringInterpolator(val sc: StringContext) extends AnyVal {
     def t(args: Any*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
-    macro Macros.interpolate[String]
+      macro Macros.interpolate[String]
 
     def lt(args: Any*)(implicit outputFormat: OutputFormat[String]): LString =
-    macro Macros.lazyInterpolate[String]
+      macro Macros.lazyInterpolate[String]
   }
 }
