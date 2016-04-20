@@ -22,5 +22,7 @@ Scalingua consists of four modules:
 Getting started
 ===============
 
+**Latest stable version: 0.3**
+
 * [Using with Scala](https://github.com/makkarpov/scalingua/wiki/Using-with-Scala) in projects like GUI and console applications
 * [Using with Play](https://github.com/makkarpov/scalingua/wiki/Using-with-Play) in projects based on Play Framework
