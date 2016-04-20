@@ -1,0 +1,19 @@
+
+#: src/test/scala/Test.scala:19
+#: src/test/scala/Test.scala:26
+#: src/test/scala/Test.scala:12
+#: src/test/scala/Test.scala:33
+#: src/test/scala/Test.scala:40
+msgid "Hello, world!"
+msgstr ""
+
+#: src/test/scala/Test.scala:13
+#: src/test/scala/Test.scala:27
+#: src/test/scala/Test.scala:34
+#: src/test/scala/Test.scala:20
+#: src/test/scala/Test.scala:41
+msgid "There is %(n) dog!"
+msgid_plural "There is %(n) dogs!"
+msgstr[0] ""
+msgstr[1] ""
+

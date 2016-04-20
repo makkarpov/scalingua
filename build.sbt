@@ -1,7 +1,7 @@
 import sbt.Keys._
 
 name := "scalingua-root"
-version := "1.0"
+version := "0.3"
 crossPaths := true
 
 publishArtifact := false
@@ -11,7 +11,7 @@ enablePlugins(CrossPerProjectPlugin)
 
 val common = Seq(
   organization := "ru.makkarpov",
-  version := "0.3",
+  version <<= version in LocalRootProject,
 
   crossPaths := true,
   scalaVersion := "2.10.4",
@@ -93,6 +93,11 @@ lazy val plugin = project
     crossPaths := false,
     scalaVersion := scala.util.Properties.versionNumberString,
     crossScalaVersions := Seq(scalaVersion.value),
-    sbtPlugin := true
-  )
-  .dependsOn(scalingua)
+    sbtPlugin := true,
+
+    ScriptedPlugin.scriptedSettings,
+    scriptedLaunchOpts ++= Seq(
+      "-Xmx1024M", "-XX:MaxPermSize=256M", "-Dscalingua.version=" + (version in LocalRootProject).value
+    ),
+    scriptedBufferLog := false
+  ).dependsOn(scalingua)

@@ -1,9 +1,11 @@
 language: scala
+sudo: false
 scala:
  - 2.11.7
 
 script:
  - sbt +test
+ - sbt "set version += \"-SNAPSHOT\"" +publishLocal scripted
 
 cache:
   directories:

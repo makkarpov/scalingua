@@ -102,7 +102,7 @@ object Scalingua extends AutoPlugin {
         ret += LanguageId(language, country)
 
       case _ =>
-        sys.error(s"Illegal file name '${src.getName}', should be formatted like 'en_US.po' (${src.getCanonicalPath})")
+        throw new IllegalArgumentException(s"Illegal file name '${src.getName}', should be formatted like 'en_US.po' (${src.getCanonicalPath})")
     }
 
     ret.result()
@@ -125,12 +125,12 @@ object Scalingua extends AutoPlugin {
         try f(genCtx)
         catch {
           case t: Throwable =>
-            throw new RuntimeException(s"Failed to compile ${src.getCanonicalPath}", t)
+            throw new IllegalArgumentException(s"Failed to compile ${src.getCanonicalPath}", t)
         }
 
         ret += tgt
       case _ =>
-        sys.error(s"Illegal file name '${src.getName}', should be formatted like 'en_US.po' (${src.getCanonicalPath})")
+        throw new IllegalArgumentException(s"Illegal file name '${src.getName}', should be formatted like 'en_US.po' (${src.getCanonicalPath})")
     }
 
     ret.result()
