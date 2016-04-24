@@ -171,7 +171,7 @@ object Macros {
     // Find a variable that represents plural number and strip `.nVar`s, if any.
     val (filteredArgs, nVar) = {
       val intVars = args.indices.filter { i =>
-        val tpe = c.typecheck(args(i)).tpe
+        val tpe = typecheck(c)(args(i)).tpe
         (tpe <:< typeOf[Int]) || (tpe <:< typeOf[Long])
       }
 
@@ -200,7 +200,7 @@ object Macros {
 
       for {
         arg <- args
-        tpe = c.typecheck(arg).tpe
+        tpe = typecheck(c)(arg).tpe
       } if (tpe <:< weakTypeOf[Suffix]) {
         val rawSuffix =
           if (tpe <:< weakTypeOf[Suffix.S]) "s"

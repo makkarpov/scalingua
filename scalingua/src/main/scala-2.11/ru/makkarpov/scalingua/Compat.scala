@@ -24,4 +24,5 @@ object Compat {
   type Context = whitebox.Context
   def prettyPrint(c: Context)(e: c.Tree): String = c.universe.showCode(e)
   def termName(c: Context)(s: String): c.TermName = c.universe.TermName(c.freshName(s))
+  def typecheck(c: Context)(e: c.Tree): c.Tree = c.typecheck(e)
 }

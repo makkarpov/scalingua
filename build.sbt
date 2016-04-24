@@ -14,7 +14,7 @@ val common = Seq(
   version <<= version in LocalRootProject,
 
   crossPaths := true,
-  scalaVersion := "2.11.7",
+  scalaVersion := "2.10.4",
   crossScalaVersions := Seq("2.10.4", "2.11.7"),
   scalacOptions ++= Seq( "-Xfatal-warnings", "-feature", "-deprecation" ),
 

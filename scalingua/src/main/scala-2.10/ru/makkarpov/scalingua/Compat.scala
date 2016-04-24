@@ -20,4 +20,5 @@ object Compat {
   type Context = scala.reflect.macros.Context
   def prettyPrint(c: Context)(e: c.Tree): String = c.universe.show(e)
   def termName(c: Context)(s: String): c.TermName = c.universe.newTermName(c.fresh(s))
+  def typecheck(c: Context)(e: c.Tree): c.Tree = c.typeCheck(e)
 }
