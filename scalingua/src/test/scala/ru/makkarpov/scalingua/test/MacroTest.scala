@@ -17,8 +17,8 @@
 package ru.makkarpov.scalingua.test
 
 import org.scalatest.{FlatSpec, Matchers}
-import ru.makkarpov.scalingua.{Language, LanguageId}
 import ru.makkarpov.scalingua.I18n._
+import ru.makkarpov.scalingua.plural.Suffix
 
 class MacroTest extends FlatSpec with Matchers {
   implicit val mockLang = new MockLang("")
@@ -137,5 +137,35 @@ class MacroTest extends FlatSpec with Matchers {
 
     """ val c = '1'; t("1".stripMargin(c)) """ shouldNot compile
     """ val s = "1"; t(s.stripMargin('1')) """ shouldNot compile
+  }
+
+  it should "handle plural strings" in {
+    val n = 10
+    val k = 5L
+    val s = "black"
+
+    p"I have $n fox${S.es}" shouldBe "{p:I have 10 fox:I have 10 foxes:10}"
+    p"I have $k $s cat${S.s}" shouldBe "{p:I have 5 black cat:I have 5 black cats:5}"
+    p"Msg $n" shouldBe "{p:Msg 10:Msg 10:10}"
+
+    // Multiple integer variables, each could be a candidate for plural number:
+    """ p"test $n $n" """ shouldNot compile
+    """ p"$k test $n" """ shouldNot compile
+
+    // Multiple `.nVar` candidates:
+    """ p"${n.nVar} ${k.nVar}" """ shouldNot compile
+    """ p"${n.nVar} ${n.nVar}" """ shouldNot compile
+
+    // No `nVar`s:
+    """ p"Simple string" """ shouldNot compile
+    """ p"$s str" """ shouldNot compile
+    """ p"${S.s}${S.es}" """ shouldNot compile
+
+    // Many many many suffixes:
+    p"${S.s}${S.s}${S.es}${S.es}${S.s}${S.es}$n" shouldBe "{p:10:ssesesses10:10}"
+
+    // Adjust suffix to case:
+    p"I HAVE $n CAT${S.s}" shouldBe "{p:I HAVE 10 CAT:I HAVE 10 CATS:10}"
+    p"$n CAT${S.s} cat${S.s} fox${S.es} FOX${S.es}" shouldBe "{p:10 CAT cat fox FOX:10 CATS cats foxes FOXES:10}"
   }
 }

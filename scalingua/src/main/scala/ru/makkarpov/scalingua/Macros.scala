@@ -18,6 +18,8 @@ package ru.makkarpov.scalingua
 
 import Compat._
 import ru.makkarpov.scalingua.extract.MessageExtractor
+import ru.makkarpov.scalingua.plural.Suffix
+import ru.makkarpov.scalingua.InsertableIterator._
 
 object Macros {
   // All macros variants: (lazy, eager) x (interpolation | (singular, plural) x (ctx, non ctx)), 10 total
@@ -40,6 +42,25 @@ object Macros {
     import c.universe._
     val (msg, argsT) = interpolator(c)(args.map(_.tree))
     c.Expr[LValue[T]](generate[T](c)(None, q"$msg", None, argsT)(None, outputFormat.tree))
+  }
+
+  def pluralInterpolate[T: c.WeakTypeTag](c: Context)
+    (args: c.Expr[Any]*)
+    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+  {
+    import c.universe._
+    val (msg, msgP, argsT, nVar) = pluralInterpolator(c)(args.map(_.tree))
+    c.Expr[T](generate[T](c)(None, q"$msg", Some((q"$msgP", nVar, false)), argsT)(Some(lang.tree), outputFormat.tree))
+  }
+
+
+  def lazyPluralInterpolate[T: c.WeakTypeTag](c: Context)
+    (args: c.Expr[Any]*)
+    (outputFormat: c.Expr[OutputFormat[T]]): c.Expr[LValue[T]] =
+  {
+    import c.universe._
+    val (msg, msgP, argsT, nVar) = pluralInterpolator(c)(args.map(_.tree))
+    c.Expr[LValue[T]](generate[T](c)(None, q"$msg", Some((q"$msgP", nVar, false)), argsT)(None, outputFormat.tree))
   }
 
   // Singular:
@@ -69,25 +90,25 @@ object Macros {
   def plural[T: c.WeakTypeTag](c: Context)
     (msg: c.Expr[String], msgPlural: c.Expr[String], n: c.Expr[Long], args: c.Expr[(String, Any)]*)
     (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
-    c.Expr[T](generate[T](c)(None, msg.tree, Some(msgPlural.tree -> n.tree), args.map(_.tree))
+    c.Expr[T](generate[T](c)(None, msg.tree, Some((msgPlural.tree, n.tree, true)), args.map(_.tree))
                             (Some(lang.tree), outputFormat.tree))
 
   def lazyPlural[T: c.WeakTypeTag](c: Context)
     (msg: c.Expr[String], msgPlural: c.Expr[String], n: c.Expr[Long], args: c.Expr[(String, Any)]*)
     (outputFormat: c.Expr[OutputFormat[T]]): c.Expr[LValue[T]] =
-    c.Expr[LValue[T]](generate[T](c)(None, msg.tree, Some(msgPlural.tree -> n.tree), args.map(_.tree))
+    c.Expr[LValue[T]](generate[T](c)(None, msg.tree, Some((msgPlural.tree, n.tree, true)), args.map(_.tree))
                                     (None, outputFormat.tree))
 
   def pluralCtx[T: c.WeakTypeTag](c: Context)
     (ctx: c.Expr[String], msg: c.Expr[String], msgPlural: c.Expr[String], n: c.Expr[Long], args: c.Expr[(String, Any)]*)
     (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
-    c.Expr[T](generate[T](c)(Some(ctx.tree), msg.tree, Some(msgPlural.tree -> n.tree), args.map(_.tree))
+    c.Expr[T](generate[T](c)(Some(ctx.tree), msg.tree, Some((msgPlural.tree, n.tree, true)), args.map(_.tree))
                             (Some(lang.tree), outputFormat.tree))
 
   def lazyPluralCtx[T: c.WeakTypeTag](c: Context)
     (ctx: c.Expr[String], msg: c.Expr[String], msgPlural: c.Expr[String], n: c.Expr[Long], args: c.Expr[(String, Any)]*)
     (outputFormat: c.Expr[OutputFormat[T]]): c.Expr[LValue[T]] =
-    c.Expr[LValue[T]](generate[T](c)(Some(ctx.tree), msg.tree, Some(msgPlural.tree -> n.tree), args.map(_.tree))
+    c.Expr[LValue[T]](generate[T](c)(Some(ctx.tree), msg.tree, Some((msgPlural.tree, n.tree, true)), args.map(_.tree))
                                     (None, outputFormat.tree))
 
   // Macro internals:
@@ -112,9 +133,203 @@ object Macros {
         c.abort(c.enclosingPosition, s"failed to match prefix, got ${prettyPrint(c)(c.prefix.tree)}")
     }
 
+    interpolationString(c)(parts, args)
+  }
+
+  /**
+    * A macro function that extracts singular and plural strings, arguments and `n` variable from plural interpolation.
+    *
+    * E.g.: `I have $n fox${S.ex}` ->
+    *  * Singular string: "I have %(n) fox"
+    *  * Plural string: "I have %(n) foxes"
+    *  * Arguments: <| "n" -> n |>
+    *  * N variable: <| n |>
+    *
+    * @param c Macro context
+    * @param args Interpolation arguments
+    * @return
+    */
+  private def pluralInterpolator(c: Context)(args: Seq[c.Tree]): (String, String, Seq[c.Tree], c.Tree) = {
+    import c.universe._
+
+    val parts = c.prefix.tree match {
+      case Apply(_, List(Apply(_, rawParts))) =>
+        rawParts.map(stringLiteral(c)(_)).map(StringContext.treatEscapes)
+
+      case _ =>
+        c.abort(c.enclosingPosition, s"failed to match prefix, got ${prettyPrint(c)(c.prefix.tree)}")
+    }
+
     assert(parts.size == args.size + 1)
 
-    // Try to infer names for simple variables
+    def nVarHint(expr: c.Tree): Option[c.Tree] = expr match {
+      case q"$prefix.int2MacroExtension($arg).nVar" => Some(arg)
+      case q"$prefix.long2MacroExtension($arg).nVar" => Some(arg)
+      case _ => None
+    }
+
+    // Find a variable that represents plural number and strip `.nVar`s, if any.
+    val (filteredArgs, nVar) = {
+      val intVars = args.indices.filter { i =>
+        val tpe = c.typecheck(args(i)).tpe
+        (tpe <:< typeOf[Int]) || (tpe <:< typeOf[Long])
+      }
+
+      val nVars = args.indices.filter(i => nVarHint(args(i)).isDefined)
+
+      val chosenN = (intVars, nVars) match {
+        case (_, Seq(i)) => i
+        case (_, Seq(_, _*)) => c.abort(c.enclosingPosition, "multiple `.nVar` annotations present")
+        case (Seq(i), _) => i
+        case (Seq(), Seq()) => c.abort(c.enclosingPosition, "no integer variable is present - provide at least one as plural number")
+        case _ => c.abort(c.enclosingPosition, "multiple integer variables present. Annotate one that represents a plural number with `x.nVar`")
+      }
+
+      val fArgs = args.map(x => nVarHint(x).getOrElse(x))
+      (fArgs, fArgs(chosenN))
+    }
+
+    // Merge parts separated by plural suffix - e.g. "fox"$es"" becomes "fox" and "foxes".
+    val (partsSingular, partsPlural, finalArgs) = {
+      val itS = parts.iterator.insertable
+      val itP = parts.iterator.insertable
+
+      val retS = Seq.newBuilder[String]
+      val retP = Seq.newBuilder[String]
+      val retA = Seq.newBuilder[c.Tree]
+
+      for {
+        arg <- args
+        tpe = c.typecheck(arg).tpe
+      } if (tpe <:< weakTypeOf[Suffix]) {
+        val rawSuffix =
+          if (tpe <:< weakTypeOf[Suffix.S]) "s"
+          else if (tpe <:< weakTypeOf[Suffix.ES]) "es"
+          else c.abort(c.enclosingPosition, s"unknown suffix type: $tpe")
+
+        val suffix =
+          if (itS.head.nonEmpty && Character.isUpperCase(itS.head.last)) rawSuffix.toUpperCase
+          else rawSuffix
+
+        itS.unnext(itS.next() + itS.next())
+        itP.unnext(itP.next() + suffix + itP.next())
+      } else {
+        retS += itS.next()
+        retP += itP.next()
+        retA += arg
+      }
+
+      // One part should remain:
+      retS += itS.next()
+      retP += itP.next()
+
+      (retS.result(), retP.result(), retA.result())
+    }
+
+    // Build interpolation strings by parts
+    val (sStr, tArgs) = interpolationString(c)(partsSingular, finalArgs)
+    // These string are guaranteed to have the same structure, so we can ignore second args:
+    val (pStr, _) = interpolationString(c)(partsPlural, finalArgs)
+
+    (sStr, pStr, tArgs, nVar)
+  }
+
+  /**
+    * A generic function to generate interpolation results. Other macros do nothing but call it.
+    *
+    * @param c Macro context
+    * @param ctxTree Optional tree with context argument
+    * @param msgTree Message argument
+    * @param pluralTree Optional with (plural message, n, insert "n" arg) arguments
+    * @param argsTree Supplied args as a trees
+    * @param lang Language tree that if present means instant evaluation
+    * @param outputFormat Tree representing `OutputFormat[T]` instance
+    * @return Tree representing an instance of `T` if language was present, or `LValue[T]` if
+    *         language was absent.
+    */
+  private def generate[T: c.WeakTypeTag](c: Context)
+    (ctxTree: Option[c.Tree], msgTree: c.Tree, pluralTree: Option[(c.Tree, c.Tree, Boolean)], argsTree: Seq[c.Tree])
+    (lang: Option[c.Tree], outputFormat: c.Tree): c.Tree =
+  {
+    import c.universe._
+
+    // Extract literals:
+    val ctx = ctxTree.map(stringLiteral(c))
+    val msg = stringLiteral(c)(msgTree)
+    val plural = pluralTree.map { case (s, n, i) => (stringLiteral(c)(s), n, i) }
+    val args = argsTree.map(tupleLiteral(c)(_)) ++ (plural match {
+      case Some((_, n, true)) => Seq("n" -> n)
+      case _ => Nil
+    })
+
+    // Call message extractor:
+    plural match {
+      case None => MessageExtractor.singular(c)(ctx, msg)
+      case Some((pl, _, _)) => MessageExtractor.plural(c)(ctx, msg, pl)
+    }
+
+    // Verify variables consistency:
+    def verifyVariables(s: String): Unit = {
+      val varsArg = args.map(_._1).toSet
+      val varsStr = StringUtils.extractVariables(s).toSet
+
+      for (v <- (varsArg diff varsStr) ++ (varsStr diff varsArg))
+        if (varsArg.contains(v))
+          c.abort(c.enclosingPosition, s"variable `$v` is not present in interpolation string")
+        else
+          c.abort(c.enclosingPosition, s"variable `$v` is not present at arguments section")
+    }
+
+    for ((v, xs) <- args.groupBy(_._1) if xs.length > 1)
+      c.abort(c.enclosingPosition, s"duplicate variable `$v`")
+
+    verifyVariables(msg)
+    for ((pl, _, _) <- plural)
+      verifyVariables(pl)
+
+    /**
+      * Given a language tree `lng`, creates a tree that will translate given message.
+      */
+    def translate(lng: c.Tree): c.Tree = {
+      val str = plural match {
+        case None => q"$lng.singular(..${ctx.toSeq}, $msg)"
+        case Some((pl, n, _)) => q"$lng.plural(..${ctx.toSeq}, $msg, $pl, $n)"
+      }
+
+      if (args.isEmpty)
+        q"$outputFormat.convert($str)"
+      else {
+        val argsT = args.map { case (k, v) => q"$k -> $v" }
+        q"_root_.ru.makkarpov.scalingua.StringUtils.interpolate[${weakTypeOf[T]}]($str, ..$argsT)"
+      }
+    }
+
+    lang match {
+      case Some(lng) => translate(lng)
+      case None =>
+        val name = termName(c)("lng")
+        q"""
+          new _root_.ru.makkarpov.scalingua.LValue(
+            ($name: _root_.ru.makkarpov.scalingua.Language) => ${translate(q"$name")}
+          )
+        """
+    }
+  }
+
+  /**
+    * Given the parts of interpolation string and trees of interpolation arguments, this function tries to
+    * guess final string with variable names like "Hello, %(name)!"
+    *
+    * @param c Macro context
+    * @param parts Interpolation string parts
+    * @param args Interpolation variables
+    * @return Final string and trees of arguments to `StringUtils.interpolate` (in format of `a -> b`)
+    */
+  private def interpolationString(c: Context)(parts: Seq[String], args: Seq[c.Tree]): (String, Seq[c.Tree]) = {
+    import c.universe._
+
+    assert(parts.size == args.size + 1)
+
     val inferredNames = args.map {
       case Ident(name: TermName) => Some(name.decodedName.toString)
       case Select(This(_), name: TermName) => Some(name.decodedName.toString)
@@ -147,88 +362,6 @@ object Macros {
     }.mkString, filtered.map {
       case (_, name, value) => q"($name, $value)"
     })
-  }
-
-  /**
-    * A generic function to generate interpolation results. Other macros do nothing but call it.
-    *
-    * @param c Macro context
-    * @param ctxTree Optional tree with context argument
-    * @param msgTree Message argument
-    * @param pluralTree Optional with (plural message, n) arguments
-    * @param argsTree Supplied args as a trees
-    * @param lang Language tree that if present means instant evaluation
-    * @param outputFormat Tree representing `OutputFormat[T]` instance
-    * @return Tree representing an instance of `T` if language was present, or `LValue[T]` if
-    *         language was absent.
-    */
-  private def generate[T: c.WeakTypeTag](c: Context)
-    (ctxTree: Option[c.Tree], msgTree: c.Tree, pluralTree: Option[(c.Tree, c.Tree)], argsTree: Seq[c.Tree])
-    (lang: Option[c.Tree], outputFormat: c.Tree): c.Tree =
-  {
-    import c.universe._
-
-    // Extract literals:
-    val ctx = ctxTree.map(stringLiteral(c))
-    val msg = stringLiteral(c)(msgTree)
-    val plural = pluralTree.map { case (s, n) => stringLiteral(c)(s) -> n }
-    val args = argsTree.map(tupleLiteral(c)(_)) ++ (plural match {
-      case Some((_, n)) => Seq("n" -> n)
-      case None => Nil
-    })
-
-    // Call message extractor:
-    plural match {
-      case None => MessageExtractor.singular(c)(ctx, msg)
-      case Some((pl, _)) => MessageExtractor.plural(c)(ctx, msg, pl)
-    }
-
-    // Verify variables consistency:
-    def verifyVariables(s: String): Unit = {
-      val varsArg = args.map(_._1).toSet
-      val varsStr = StringUtils.extractVariables(s).toSet
-
-      for (v <- (varsArg diff varsStr) ++ (varsStr diff varsArg))
-        if (varsArg.contains(v))
-          c.abort(c.enclosingPosition, s"variable `$v` is not present in interpolation string")
-        else
-          c.abort(c.enclosingPosition, s"variable `$v` is not present at arguments section")
-    }
-
-    for ((v, xs) <- args.groupBy(_._1) if xs.length > 1)
-      c.abort(c.enclosingPosition, s"duplicate variable `$v`")
-
-    verifyVariables(msg)
-    for ((pl, _) <- plural)
-      verifyVariables(pl)
-
-    /**
-      * Given a language tree `lng`, creates a tree that will translate given message.
-      */
-    def translate(lng: c.Tree): c.Tree = {
-      val str = plural match {
-        case None => q"$lng.singular(..${ctx.toSeq}, $msg)"
-        case Some((pl, n)) => q"$lng.plural(..${ctx.toSeq}, $msg, $pl, $n)"
-      }
-
-      if (args.isEmpty)
-        q"$outputFormat.convert($str)"
-      else {
-        val argsT = args.map { case (k, v) => q"$k -> $v" }
-        q"_root_.ru.makkarpov.scalingua.StringUtils.interpolate[${weakTypeOf[T]}]($str, ..$argsT)"
-      }
-    }
-
-    lang match {
-      case Some(lng) => translate(lng)
-      case None =>
-        val name = termName(c)("lng")
-        q"""
-          new _root_.ru.makkarpov.scalingua.LValue(
-            ($name: _root_.ru.makkarpov.scalingua.Language) => ${translate(q"$name")}
-          )
-        """
-    }
   }
 
   /**

@@ -16,16 +16,27 @@
 
 package ru.makkarpov.scalingua
 
+import ru.makkarpov.scalingua.plural.Suffix
+
 import scala.language.experimental.macros
 import scala.language.implicitConversions
+import scala.reflect.internal.annotations.compileTimeOnly
 
 trait I18n {
   type LString = LValue[String]
+
+  val S = Suffix
 
   // Since I want to keep StringInterpolator AnyVal, I will extract it to a place where there is no path-dependency
   // and provide here only implicit conversion function.
   implicit def stringContext2Interpolator(sc: StringContext): I18n.StringInterpolator =
     new I18n.StringInterpolator(sc)
+
+  implicit def long2MacroExtension(v: Long): I18n.PluralMacroExtensions =
+    new I18n.PluralMacroExtensions(v)
+
+  implicit def int2MacroExtension(i: Int): I18n.PluralMacroExtensions =
+    new I18n.PluralMacroExtensions(i)
 
   def t(msg: String, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
     macro Macros.singular[String]
@@ -63,5 +74,12 @@ object I18n extends I18n {
 
     def lt(args: Any*)(implicit outputFormat: OutputFormat[String]): LString =
       macro Macros.lazyInterpolate[String]
+
+    def p(args: Any*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
+      macro Macros.pluralInterpolate[String]
+  }
+
+  class PluralMacroExtensions(val l: Long) extends AnyVal {
+    def nVar: Long = throw new IllegalStateException(".nVars should not remain after macro expansion")
   }
 }
