@@ -90,12 +90,23 @@ class ExtractorSession(val global: Universe, setts: ExtractorSettings) {
       while (c.prev != NoPhase)
         c = c.prev
 
-      do {
+      var flag = true
+      while (flag) {
         r += c
-        c = c.next
-      } while (c.hasNext)
+        if (c.hasNext) c = c.next
+        else flag = false
+      }
 
       r.result()
+    }
+
+    def printPhases: String = {
+      val ret = new StringBuilder
+
+      for ((x, i) <- allPhases.zipWithIndex)
+        ret ++= f" $i%02d: ${x.name}%s (id = ${x.id}%02d, prev = '${x.prev.name}%s', next = '${x.next.name}%s', hasNext = ${x.hasNext}%s)%n"
+
+      ret.result()
     }
 
     def insertBefore(next: Phase): Unit = {
@@ -131,7 +142,9 @@ class ExtractorSession(val global: Universe, setts: ExtractorSettings) {
 //      pw.set(next, own)
     }
 
-    insertBefore(allPhases.find(_.name == "jvm").get)
+    insertBefore(allPhases.find(_.name == "terminal").getOrElse {
+      throw new IllegalArgumentException(s"No terminal phase in compiler: \n$printPhases")
+    })
   } catch {
     case t: Throwable =>
       Console.err.println(
