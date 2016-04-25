@@ -58,7 +58,7 @@ trait I18n extends scalingua.I18n {
   // one with respect to priority.
 
   implicit def requestHeader2Language(implicit rq: RequestHeader, msg: Messages): Language =
-    PlayUtils.languageFromAccept(rq.headers(HeaderNames.ACCEPT_LANGUAGE))
+    rq.headers.get(HeaderNames.ACCEPT_LANGUAGE).map(PlayUtils.languageFromAccept).getOrElse(Language.English)
 
   implicit def stringContext2Interpolator1(sc: StringContext): PlayUtils.StringInterpolator =
     new PlayUtils.StringInterpolator(sc)
