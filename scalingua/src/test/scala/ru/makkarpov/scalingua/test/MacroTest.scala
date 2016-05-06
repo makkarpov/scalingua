@@ -28,11 +28,11 @@ class MacroTest extends FlatSpec with Matchers {
 
     val x = 10
 
-    t"Number is $x" shouldBe s"{s:Number is $x}"
-    t"Number is $x%(y)" shouldBe s"{s:Number is $x}"
+    t"Number is $x" shouldBe s"{s:Number is %(x)[10]}"
+    t"Number is $x%(y)" shouldBe s"{s:Number is %(y)[10]}"
 
     """ t"Number is ${x+10}" """ shouldNot typeCheck
-    t"Number is ${x+10}%(y)" shouldBe s"{s:Number is ${x+10}}"
+    t"Number is ${x+10}%(y)" shouldBe s"{s:Number is %(y)[20]}"
    }
 
   it should "handle singular forms" in {
@@ -42,9 +42,9 @@ class MacroTest extends FlatSpec with Matchers {
     """ t("Test", "x" -> 20) """ shouldNot typeCheck
     """ t("Test %(y)", "x" -> 20) """ shouldNot typeCheck
 
-    t("Test %(x)", "x" -> 20) shouldBe "{s:Test 20}"
-    t("Test %(x)", ("x", 30)) shouldBe "{s:Test 30}"
-    t("Test %(x)%(x)%(x)", "x" -> true) shouldBe "{s:Test truetruetrue}"
+    t("Test %(x)", "x" -> 20) shouldBe "{s:Test %(x)[20]}"
+    t("Test %(x)", ("x", 30)) shouldBe "{s:Test %(x)[30]}"
+    t("Test %(x)%(x)%(x)", "x" -> true) shouldBe "{s:Test %(x)[true]%(x)[true]%(x)[true]}"
 
     """ val s = "1"; t(s) """ shouldNot typeCheck
     """ val s = "x"; t("1", s -> 1) """ shouldNot typeCheck
@@ -70,20 +70,20 @@ class MacroTest extends FlatSpec with Matchers {
   }
 
   it should "handle plural forms" in {
-    p("Hello, %(n) world!", "Hello, %(n) worlds!", 1) shouldBe "{p:Hello, 1 world!:Hello, 1 worlds!:1}"
+    p("Hello, %(n) world!", "Hello, %(n) worlds!", 1) shouldBe "{p:Hello, %(n)[1] world!:Hello, %(n)[1] worlds!:1}"
 
     // %(n) should be present in string
     """ p("Test", "Tests", 1) """ shouldNot typeCheck
 
     val n = 10 + 20
-    p("%(n)", "%(n)s", n) shouldBe "{p:30:30s:30}"
+    p("%(n)", "%(n)s", n) shouldBe "{p:%(n)[30]:%(n)[30]s:30}"
 
     """ p("1%(n)", "2", 3) """ shouldNot typeCheck
     """ p("1", "2%(n)", 3) """ shouldNot typeCheck
     """ p("1%(n)%(x)", "2%(n)", 3) """ shouldNot typeCheck
     """ p("1%(n)", "2%(n)%(x)", 3) """ shouldNot typeCheck
 
-    p("%(n)s%(x)", "%(x)p%(n)", 3, "x" -> 2) shouldBe "{p:3s2:2p3:3}"
+    p("%(n)s%(x)", "%(x)p%(n)", 3, "x" -> 2) shouldBe "{p:%(n)[3]s%(x)[2]:%(x)[2]p%(n)[3]:3}"
 
     """ p("1%(n)%(x)", "2%(n)%(y)", 3, "x" -> 1, "y" -> 2) """ shouldNot typeCheck
     """ val s = "%(n)"; p(s, "%(n)", 3) """ shouldNot typeCheck
@@ -91,7 +91,7 @@ class MacroTest extends FlatSpec with Matchers {
   }
 
   it should "handle contextual plural forms" in {
-    pc("1", "2%(n)", "%(n)3", 4) shouldBe "{pc:1:24:43:4}"
+    pc("1", "2%(n)", "%(n)3", 4) shouldBe "{pc:1:2%(n)[4]:%(n)[4]3:4}"
 
     """ pc("0", "1", "2%(n)", 3) """ shouldNot typeCheck
 
@@ -100,7 +100,8 @@ class MacroTest extends FlatSpec with Matchers {
     """ pc("0", "1%(n)%(x)", "2%(n)", 3) """ shouldNot typeCheck
     """ pc("0", "1%(n)", "2%(n)%(x)", 3) """ shouldNot typeCheck
 
-    pc("1", "%(x)%(y)%(n)%(x)", "%(y)%(n)%(x)%(y)", 1, "x" -> 2, "y" -> 3) shouldBe "{pc:1:2312:3123:1}"
+    pc("1", "%(x)%(y)%(n)%(x)", "%(y)%(n)%(x)%(y)", 1, "x" -> 2, "y" -> 3) shouldBe
+          "{pc:1:%(x)[2]%(y)[3]%(n)[1]%(x)[2]:%(y)[3]%(n)[1]%(x)[2]%(y)[3]:1}"
 
     """ val s = "1"; pc(s, "%(n)", "%(n)", 1) """ shouldNot typeCheck
     """ val s = "%(n)"; pc("1", s, "%(n)", 1) """ shouldNot typeCheck
@@ -144,9 +145,9 @@ class MacroTest extends FlatSpec with Matchers {
     val k = 5L
     val s = "black"
 
-    p"I have $n fox${S.es}" shouldBe "{p:I have 10 fox:I have 10 foxes:10}"
-    p"I have $k $s cat${S.s}" shouldBe "{p:I have 5 black cat:I have 5 black cats:5}"
-    p"Msg $n" shouldBe "{p:Msg 10:Msg 10:10}"
+    p"I have $n fox${S.es}" shouldBe "{p:I have %(n)[10] fox:I have %(n)[10] foxes:10}"
+    p"I have $k $s cat${S.s}" shouldBe "{p:I have %(k)[5] %(s)[black] cat:I have %(k)[5] %(s)[black] cats:5}"
+    p"Msg $n" shouldBe "{p:Msg %(n)[10]:Msg %(n)[10]:10}"
 
     // Multiple integer variables, each could be a plural number:
     """ p"test $n $n" """ shouldNot typeCheck
@@ -162,17 +163,18 @@ class MacroTest extends FlatSpec with Matchers {
     """ p"${S.s}${S.es}" """ shouldNot typeCheck
 
     // Many many many suffixes:
-    p"${S.s}${S.s}${S.es}${S.es}${S.s}${S.es}$n" shouldBe "{p:10:ssesesses10:10}"
+    p"${S.s}${S.s}${S.es}${S.es}${S.s}${S.es}$n" shouldBe "{p:%(n)[10]:ssesesses%(n)[10]:10}"
 
     // Adjust suffix to case:
-    p"I HAVE $n CAT${S.s}" shouldBe "{p:I HAVE 10 CAT:I HAVE 10 CATS:10}"
-    p"$n CAT${S.s} cat${S.s} fox${S.es} FOX${S.es}" shouldBe "{p:10 CAT cat fox FOX:10 CATS cats foxes FOXES:10}"
+    p"I HAVE $n CAT${S.s}" shouldBe "{p:I HAVE %(n)[10] CAT:I HAVE %(n)[10] CATS:10}"
+    p"$n CAT${S.s} cat${S.s} fox${S.es} FOX${S.es}" shouldBe
+        "{p:%(n)[10] CAT cat fox FOX:%(n)[10] CATS cats foxes FOXES:10}"
 
     // `a &> b` operator:
-    p"There ${"is" &> "are"} $n pen${S.s}" shouldBe "{p:There is 10 pen:There are 10 pens:10}"
+    p"There ${"is" &> "are"} $n pen${S.s}" shouldBe "{p:There is %(n)[10] pen:There are %(n)[10] pens:10}"
     """ p"${p &> "1"}" """ shouldNot typeCheck
     """ p"${"1" &> p}" """ shouldNot typeCheck
 
-    p"${S.s}${"" &> ""}${"x" &> ""}${"" &> "y"}${S.es}${"z" &> "w"}$n" shouldBe "{p:xz10:syesw10:10}"
+    p"${S.s}${"" &> ""}${"x" &> ""}${"" &> "y"}${S.es}${"z" &> "w"}$n" shouldBe "{p:xz%(n)[10]:syesw%(n)[10]:10}"
   }
 }

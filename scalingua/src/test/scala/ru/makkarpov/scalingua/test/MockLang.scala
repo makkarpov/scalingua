@@ -20,9 +20,15 @@ import ru.makkarpov.scalingua.{Language, LanguageId}
 
 class MockLang(s: String) extends Language {
   override def id: LanguageId = LanguageId("mock", "p" + s)
-  override def singular(msgid: String): String = s"{s$s:$msgid}"
-  override def singular(msgctx: String, msgid: String): String = s"{sc$s:$msgctx:$msgid}"
-  override def plural(msgid: String, msgidPlural: String, n: Long): String = s"{p$s:$msgid:$msgidPlural:$n}"
+  override def singular(msgid: String): String =
+    parts("s", msgid)
+  override def singular(msgctx: String, msgid: String): String =
+    parts("sc", msgctx, msgid)
+  override def plural(msgid: String, msgidPlural: String, n: Long): String =
+    parts("p", msgid, msgidPlural, n)
   override def plural(msgctx: String, msgid: String, msgidPlural: String, n: Long): String =
-    s"{pc$s:$msgctx:$msgid:$msgidPlural:$n}"
+    parts("pc", msgctx, msgid, msgidPlural, n)
+
+  private def parts(code: String, args: Any*): String =
+    s"{$code$s:" + args.map(_.toString.replaceAll("%\\(([a-z]+)\\)", "%%($1)[%($1)]")).mkString(":") + "}"
 }

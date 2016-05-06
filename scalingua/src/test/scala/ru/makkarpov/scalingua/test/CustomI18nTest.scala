@@ -44,7 +44,7 @@ class CustomI18nTest extends FlatSpec with Matchers {
 
   it should "handle custom methods in I18n classes" in {
     ct("Hello, world!").s shouldBe "C{{s:Hello, world!}}"
-    ct("Hello, %(what)!", "what" -> "world").s shouldBe "C{{s:Hello, [world]!}}"
+    ct("Hello, %(what)!", "what" -> "world").s shouldBe "C{{s:Hello, %(what)[[world]]!}}"
 
     """ ct("Hello, %(x)!", "y" -> 1) """ shouldNot compile
   }
