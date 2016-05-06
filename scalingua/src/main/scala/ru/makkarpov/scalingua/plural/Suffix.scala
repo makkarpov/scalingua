@@ -21,8 +21,14 @@ package ru.makkarpov.scalingua.plural
   * `Suffix.ES`, it's considered as plural suffix. No instances of `Suffix.*` exists.
   */
 object Suffix {
+  sealed trait Generic extends Suffix
   sealed trait S extends Suffix
   sealed trait ES extends Suffix
+
+  case class GenericSuffixExtension(s: String) extends AnyVal {
+    def &>(plur: String): Suffix.Generic =
+      throw new IllegalArgumentException("&> should not remain after macro expansion")
+  }
 
   def s: S = throw new IllegalArgumentException(".s or .es should not remain after macro expansion")
   def es: ES = throw new IllegalArgumentException(".s or .es should not remain after macro expansion")

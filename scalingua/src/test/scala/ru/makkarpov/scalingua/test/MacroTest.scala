@@ -148,7 +148,7 @@ class MacroTest extends FlatSpec with Matchers {
     p"I have $k $s cat${S.s}" shouldBe "{p:I have 5 black cat:I have 5 black cats:5}"
     p"Msg $n" shouldBe "{p:Msg 10:Msg 10:10}"
 
-    // Multiple integer variables, each could be a candidate for plural number:
+    // Multiple integer variables, each could be a plural number:
     """ p"test $n $n" """ shouldNot compile
     """ p"$k test $n" """ shouldNot compile
 
@@ -167,5 +167,12 @@ class MacroTest extends FlatSpec with Matchers {
     // Adjust suffix to case:
     p"I HAVE $n CAT${S.s}" shouldBe "{p:I HAVE 10 CAT:I HAVE 10 CATS:10}"
     p"$n CAT${S.s} cat${S.s} fox${S.es} FOX${S.es}" shouldBe "{p:10 CAT cat fox FOX:10 CATS cats foxes FOXES:10}"
+
+    // `a &> b` operator:
+    p"There ${"is" &> "are"} $n pen${S.s}" shouldBe "{p:There is 10 pen:There are 10 pens:10}"
+    """ p"${p &> "1"}" """ shouldNot compile
+    """ p"${"1" &> p}" """ shouldNot compile
+
+    p"${S.s}${"" &> ""}${"x" &> ""}${"" &> "y"}${S.es}${"z" &> "w"}$n" shouldBe "{p:xz10:syesw10:10}"
   }
 }

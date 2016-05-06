@@ -201,7 +201,16 @@ object Macros {
       for {
         arg <- args
         tpe = typecheck(c)(arg).tpe
-      } if (tpe <:< weakTypeOf[Suffix]) {
+      } if (tpe <:< weakTypeOf[Suffix.Generic]) {
+        arg match {
+          case q"$prefix.string2SuffixExtension($sing).&>($plur)" =>
+            itS.unnext(itS.next() + stringLiteral(c)(sing) + itS.next())
+            itP.unnext(itP.next() + stringLiteral(c)(plur) + itP.next())
+
+          case _ =>
+            c.abort(c.enclosingPosition, s"expression of type `Suffix.Generic` should have `a &> b` form, got instead `${prettyPrint(c)(arg)}`")
+        }
+      } else if (tpe <:< weakTypeOf[Suffix]) {
         val rawSuffix =
           if (tpe <:< weakTypeOf[Suffix.S]) "s"
           else if (tpe <:< weakTypeOf[Suffix.ES]) "es"

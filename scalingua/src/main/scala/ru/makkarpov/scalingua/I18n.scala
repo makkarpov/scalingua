@@ -38,6 +38,9 @@ trait I18n {
   implicit def int2MacroExtension(i: Int): I18n.PluralMacroExtensions =
     new I18n.PluralMacroExtensions(i)
 
+  implicit def string2SuffixExtension(s: String): Suffix.GenericSuffixExtension =
+    new Suffix.GenericSuffixExtension(s)
+
   def t(msg: String, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
     macro Macros.singular[String]
 
