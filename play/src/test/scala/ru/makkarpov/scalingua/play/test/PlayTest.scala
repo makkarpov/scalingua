@@ -24,8 +24,8 @@ class PlayTest extends FlatSpec with Matchers {
   it should "handle HTML translations" in {
     implicit val lang = Language.English
     val x = "\"List<String>\""
-    h"A class $x can be used to provide simple list container".body shouldBe
-      "A class &quot;List&lt;String&gt;&quot; can be used to provide simple list container"
+    h"A class <code>$x</code> can be used to provide simple list container".body shouldBe
+      "A class <code>&quot;List&lt;String&gt;&quot;</code> can be used to provide simple list container"
   }
 
   it should "handle 'Accept' header" in {
