@@ -49,7 +49,7 @@ class MacroTest extends FlatSpec with Matchers {
     """ val s = "1"; t(s) """ shouldNot typeCheck
     """ val s = "x"; t("1", s -> 1) """ shouldNot typeCheck
 
-    { val i = 2; t("1%(1)3", "1" -> i ) } shouldBe "{s:123}"
+    { val i = 2; t("1%(1)3", "1" -> i ) } shouldBe "{s:1%(1)[2]3}"
   }
 
   it should "handle contextual singular forms" in {
@@ -59,14 +59,14 @@ class MacroTest extends FlatSpec with Matchers {
     """ tc("1", "2", "3" -> 4) """ shouldNot typeCheck
     """ tc("1", "%(2)", "3" -> 4) """ shouldNot typeCheck
 
-    tc("1", "%(2)", "2" -> 3) shouldBe "{sc:1:3}"
-    tc("1", "%(2)%(3)", "2" -> 4, "3" -> 5) shouldBe "{sc:1:45}"
+    tc("1", "%(2)", "2" -> 3) shouldBe "{sc:1:%(2)[3]}"
+    tc("1", "%(2)%(3)", "2" -> 4, "3" -> 5) shouldBe "{sc:1:%(2)[4]%(3)[5]}"
 
     """ val s = "1"; tc(s, "1") """ shouldNot typeCheck
     """ val s = "2"; tc("1", s) """ shouldNot typeCheck
     """ val s = "3"; tc("1", "2", s -> 4) """ shouldNot typeCheck
 
-    { val i = 3; tc("1", "%(2)", "2" -> i) } shouldBe "{sc:1:3}"
+    { val i = 3; tc("1", "%(2)", "2" -> i) } shouldBe "{sc:1:%(2)[3]}"
   }
 
   it should "handle plural forms" in {
