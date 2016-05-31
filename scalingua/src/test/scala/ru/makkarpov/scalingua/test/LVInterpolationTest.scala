@@ -16,20 +16,29 @@
 
 package ru.makkarpov.scalingua.test
 
-import ru.makkarpov.scalingua.{Language, LanguageId}
+import org.scalatest.{FlatSpec, Matchers}
+import ru.makkarpov.scalingua.LValue
+import ru.makkarpov.scalingua.I18n._
 
-class MockLang(s: String) extends Language {
-  override def id: LanguageId = LanguageId("mock", "p" + s)
-  override def singular(msgid: String): String =
-    parts("s", msgid)
-  override def singular(msgctx: String, msgid: String): String =
-    parts("sc", msgctx, msgid)
-  override def plural(msgid: String, msgidPlural: String, n: Long): String =
-    parts("p", msgid, msgidPlural, n)
-  override def plural(msgctx: String, msgid: String, msgidPlural: String, n: Long): String =
-    parts("pc", msgctx, msgid, msgidPlural, n)
+class LVInterpolationTest extends FlatSpec with Matchers {
+  val langLvalue = new LValue[String](l => s"L'${l.id.toString}'")
 
-  private def parts(code: String, args: Any*): String = {
-    s"{$code$s:" + args.map(_.toString.replaceAll("%\\(([^)]+)\\)", "%%($1)[%($1)]")).mkString(":") + "}"
+  it should "interpolate LValues with correct languages" in {
+    implicit val lang = new MockLang("1")
+
+    val str = "Hello"
+
+    t"$str, $langLvalue" shouldBe "{s1:%(str)[Hello], %(langLvalue)[L'mock-p1']}"
+  }
+
+  it should "generate LValues with nested LValues" in {
+    val lstr = lt"Hello, $langLvalue"
+
+    lstr(new MockLang("1")) shouldBe "{s1:Hello, %(langLvalue)[L'mock-p1']}"
+    lstr(new MockLang("2")) shouldBe "{s2:Hello, %(langLvalue)[L'mock-p2']}"
+
+    val l2 = lt"$langLvalue%(a) $langLvalue%(b)"
+
+    l2(new MockLang("1")) shouldBe "{s1:%(a)[L'mock-p1'] %(b)[L'mock-p1']}"
   }
 }

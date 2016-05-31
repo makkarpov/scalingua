@@ -308,7 +308,7 @@ object Macros {
       if (args.isEmpty)
         q"$outputFormat.convert($str)"
       else {
-        val argsT = args.map { case (k, v) => q"$k -> $v" }
+        val argsT = processArgs(c)(args, lng)
         q"_root_.ru.makkarpov.scalingua.StringUtils.interpolate[${weakTypeOf[T]}]($str, ..$argsT)"
       }
     }
@@ -323,6 +323,24 @@ object Macros {
           )
         """
     }
+  }
+
+  /**
+    * Convert name/value pairs to a sequence of tuples and expands specific arguments.
+    * @param c
+    * @param args
+    * @return
+    */
+  private def processArgs(c: Context)(args: Seq[(String, c.Tree)], lang: c.Tree): Seq[c.Tree] = args.map {
+    case (k, v) =>
+      import c.universe._
+
+      val tpe = typecheck(c)(v).tpe
+      val xv =
+        if (tpe <:< weakTypeOf[LValue[_]]) q"$v($lang)"
+        else v
+
+      q"$k -> $xv"
   }
 
   /**
