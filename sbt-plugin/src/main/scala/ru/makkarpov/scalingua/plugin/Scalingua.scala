@@ -110,7 +110,7 @@ object Scalingua extends AutoPlugin {
 
   def withGenContext(task: TaskKey[Seq[File]], fileFormat: String)(f: GenerationContext => Unit) = Def.task {
     val baseTgt = (target in task).value
-    val pkg = localePackage.value
+    val pkg = (localePackage in task).value
     val log = streams.value.log
 
     val langPattern = "^([a-z]{2})_([A-Z]{2})\\.po$".r
