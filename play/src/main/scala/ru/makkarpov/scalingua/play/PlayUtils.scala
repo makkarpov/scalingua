@@ -29,6 +29,12 @@ object PlayUtils {
 
     def lh(args: Any*)(implicit outputFormat: OutputFormat[Html]): LValue[Html] =
       macro Macros.lazyInterpolate[Html]
+
+    def ph(args: Any*)(implicit lang: Language, outputFormat: OutputFormat[Html]): Html =
+      macro Macros.pluralInterpolate[Html]
+
+    def lph(args: Any*)(outputFormat: OutputFormat[Html]): LValue[Html] =
+      macro Macros.lazyPluralInterpolate[Html]
   }
 
   // Modified to match only correct doubles

@@ -80,6 +80,9 @@ object I18n extends I18n {
 
     def p(args: Any*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
       macro Macros.pluralInterpolate[String]
+
+    def lp(args: Any*)(implicit outputFormat: OutputFormat[String]): LString =
+      macro Macros.lazyPluralInterpolate[String]
   }
 
   class PluralMacroExtensions(val l: Long) extends AnyVal {

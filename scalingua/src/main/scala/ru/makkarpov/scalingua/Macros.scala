@@ -22,7 +22,7 @@ import ru.makkarpov.scalingua.plural.Suffix
 import ru.makkarpov.scalingua.InsertableIterator._
 
 object Macros {
-  // All macros variants: (lazy, eager) x (interpolation | (singular, plural) x (ctx, non ctx)), 10 total
+  // All macros variants: (lazy, eager) x (singular, plural) x (interpolation, ctx, non ctx)), 12 total
 
   // Interpolators:
 
