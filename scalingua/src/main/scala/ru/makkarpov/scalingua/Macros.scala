@@ -406,22 +406,22 @@ object Macros {
   private def stringLiteral(c: Context)(e: c.Tree): String = {
     import c.universe._
 
+    def stripMargin(str: Tree, ch: Tree): String = (str, ch) match {
+      case (Literal(Constant(s: String)), Literal(Constant(c: Char))) => s.stripMargin(c).trim
+      case (Literal(Constant(s: String)), EmptyTree) => s.stripMargin.trim
+      case (Literal(Constant(_: String)), _) =>
+        c.abort(c.enclosingPosition, s"Expected character literal, got instead ${prettyPrint(c)(ch)}")
+      case _ => c.abort(c.enclosingPosition, s"Expected string literal, got instead ${prettyPrint(c)(str)}")
+    }
+
     e match {
       case Literal(Constant(s: String)) => s
 
-      case q"scala.this.Predef.augmentString($str).stripMargin" =>
-        str match {
-          case Literal(Constant(s: String)) => s.stripMargin.trim
-          case _ => c.abort(c.enclosingPosition, s"Expected string literal, got instead ${prettyPrint(c)(str)}")
-        }
+      case q"scala.this.Predef.augmentString($str).stripMargin" => stripMargin(str, EmptyTree) // 2.11
+      case q"scala.Predef.augmentString($str).stripMargin" => stripMargin(str, EmptyTree) // 2.12
 
-      case q"scala.this.Predef.augmentString($str).stripMargin($ch)" =>
-        (str, ch) match {
-          case (Literal(Constant(s: String)), Literal(Constant(c: Char))) => s.stripMargin(c).trim
-          case (Literal(Constant(s: String)), _) =>
-            c.abort(c.enclosingPosition, s"Expected character literal, got instead ${prettyPrint(c)(ch)}")
-          case _ => c.abort(c.enclosingPosition, s"Expected string literal, got instead ${prettyPrint(c)(str)}")
-        }
+      case q"scala.this.Predef.augmentString($str).stripMargin($ch)" => stripMargin(str, ch) // 2.11
+      case q"scala.Predef.augmentString($str).stripMargin($ch)" => stripMargin(str, ch) // 2.12
 
       case _ =>
         c.abort(c.enclosingPosition, s"Expected string literal or multi-line string, got instead ${prettyPrint(c)(e)}")
@@ -443,6 +443,7 @@ object Macros {
     import c.universe._
 
     val (a, b) = e match {
+      case q"scala.Predef.ArrowAssoc[$aType]($ax).->[$bType]($bx)" => (ax, bx) // 2.12
       case q"scala.this.Predef.ArrowAssoc[$aType]($ax).->[$bType]($bx)" => (ax, bx) // 2.11
       case q"scala.this.Predef.any2ArrowAssoc[$aType]($ax).->[$bType]($bx)" => (ax, bx) // 2.10
       case q"($ax, $bx)" => (ax, bx)

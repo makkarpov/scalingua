@@ -1,7 +1,7 @@
 import sbt.Keys._
 
 name := "scalingua-root"
-version := "0.5.2"
+version := "0.5.3"
 crossPaths := true
 
 publishArtifact := false
@@ -15,10 +15,10 @@ val common = Seq(
 
   crossPaths := true,
   scalaVersion := "2.10.4",
-  crossScalaVersions := Seq("2.10.4", "2.11.7"),
+  crossScalaVersions := Seq("2.10.4", "2.11.7", "2.12.1"),
   scalacOptions ++= Seq( "-Xfatal-warnings", "-feature", "-deprecation" ),
 
-  libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6" % Test,
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % Test,
 
   publishArtifact in Test := false,
   publishMavenStyle := true,
@@ -86,11 +86,11 @@ lazy val scalingua = project
 lazy val play = project
   .settings(common:_*)
   .settings(
-    name := "Scalingua Play! module",
+    name := "Scalingua Play module",
     normalizedName := "scalingua-play",
-    description := "An integration module for Play! Framework",
+    description := "An integration module for Play Framework",
 
-    // Recent versions of Play! supports only recent version of Scala.
+    // Recent versions of Play supports only recent version of Scala.
     // We should keep `crossPath` to keep naming consistent
     scalaVersion := "2.11.7",
     crossScalaVersions := Seq(scalaVersion.value),
