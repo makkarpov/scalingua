@@ -262,8 +262,11 @@ object Macros {
   {
     import c.universe._
 
+    val session = MessageExtractor.setupSession(c)
+
     // Extract literals:
-    val ctx = ctxTree.map(stringLiteral(c))
+    val rawCtx = ctxTree.map(stringLiteral(c))
+    val ctx = session.setts.mergeContext(rawCtx)
     val msg = stringLiteral(c)(msgTree)
     val plural = pluralTree.map { case (s, n, i) => (stringLiteral(c)(s), n, i) }
     val args = argsTree.map(tupleLiteral(c)(_)) ++ (plural match {
@@ -273,8 +276,8 @@ object Macros {
 
     // Call message extractor:
     plural match {
-      case None => MessageExtractor.singular(c)(ctx, msg)
-      case Some((pl, _, _)) => MessageExtractor.plural(c)(ctx, msg, pl)
+      case None => session.singular(c)(rawCtx, msg)
+      case Some((pl, _, _)) => session.plural(c)(rawCtx, msg, pl)
     }
 
     // Verify variables consistency:

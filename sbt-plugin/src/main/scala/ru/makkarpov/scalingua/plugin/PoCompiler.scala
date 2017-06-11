@@ -56,25 +56,25 @@ object PoCompiler {
       }
 
       for (m <- PoFile(ctx.src)) m match {
-        case Message.Singular(_, None, id, tr) =>
-          dos.writeByte(1)
+        case Message.Singular(_, ctxt, id, tr) =>
+          ctx.mergeContext(ctxt.map(_.merge)) match {
+            case None => dos.writeByte(1)
+            case Some(x) =>
+              dos.writeByte(2)
+              dos.writeUTF(x)
+          }
+
           dos.writeUTF(id.merge)
           dos.writeUTF(tr.merge)
 
-        case Message.Singular(_, Some(ctxt), id, tr) =>
-          dos.writeByte(2)
-          dos.writeUTF(ctxt.merge)
-          dos.writeUTF(id.merge)
-          dos.writeUTF(tr.merge)
+        case Message.Plural(_, ctxt, id, _, trs) =>
+          ctx.mergeContext(ctxt.map(_.merge)) match {
+            case None => dos.writeByte(3)
+            case Some(x) =>
+              dos.writeByte(4)
+              dos.writeUTF(x)
+          }
 
-        case Message.Plural(_, None, id, _, trs) =>
-          dos.writeByte(3)
-          dos.writeUTF(id.merge)
-          writePlurals(trs)
-
-        case Message.Plural(_, Some(ctxt), id, _, trs) =>
-          dos.writeByte(4)
-          dos.writeUTF(ctxt.merge)
           dos.writeUTF(id.merge)
           writePlurals(trs)
       }

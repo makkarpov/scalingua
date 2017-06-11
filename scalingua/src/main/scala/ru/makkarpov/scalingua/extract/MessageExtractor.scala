@@ -21,7 +21,7 @@ import ru.makkarpov.scalingua.Compat._
 object MessageExtractor {
   private var session = Option.empty[ExtractorSession]
 
-  private def setupSession(c: Context): ExtractorSession = {
+  def setupSession(c: Context): ExtractorSession = {
     val r = session match {
       case None => new ExtractorSession(c.universe, ExtractorSettings.fromContext(c))
       case Some(sess) if c.universe eq sess.global => sess
@@ -33,10 +33,4 @@ object MessageExtractor {
     session = Some(r)
     r
   }
-
-  def singular(c: Context)(msgctx: Option[String], msgid: String): Unit =
-    setupSession(c).put(msgctx, msgid, None, c.enclosingPosition)
-
-  def plural(c: Context)(msgctx: Option[String], msgid: String, msgidPlural: String): Unit =
-    setupSession(c).put(msgctx, msgid, Some(msgidPlural), c.enclosingPosition)
 }

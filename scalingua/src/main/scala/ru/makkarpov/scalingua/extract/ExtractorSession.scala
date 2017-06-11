@@ -18,7 +18,9 @@ package ru.makkarpov.scalingua.extract
 
 import java.io.IOException
 
+import ru.makkarpov.scalingua.Compat.Context
 import ru.makkarpov.scalingua.extract.ExtractorSession.MutableMessage
+import ru.makkarpov.scalingua.extract.MessageExtractor.setupSession
 import ru.makkarpov.scalingua.pofile._
 
 import scala.collection.mutable
@@ -71,7 +73,7 @@ object ExtractorSession {
   }
 }
 
-class ExtractorSession(val global: Universe, setts: ExtractorSettings) {
+class ExtractorSession(val global: Universe, val setts: ExtractorSettings) {
   private var _finished = false
 
   /* Since macros don't know when compiler will terminate, we will try to make compiler tell it to us.
@@ -251,4 +253,10 @@ class ExtractorSession(val global: Universe, setts: ExtractorSettings) {
     else
       msg.translations = Seq(MultipartString.empty)
   }
+
+  def singular(c: Context)(msgctx: Option[String], msgid: String): Unit =
+    setupSession(c).put(msgctx, msgid, None, c.enclosingPosition)
+
+  def plural(c: Context)(msgctx: Option[String], msgid: String, msgidPlural: String): Unit =
+    setupSession(c).put(msgctx, msgid, Some(msgidPlural), c.enclosingPosition)
 }

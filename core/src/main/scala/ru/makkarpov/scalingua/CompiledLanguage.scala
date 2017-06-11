@@ -16,7 +16,9 @@
 
 package ru.makkarpov.scalingua
 
-import java.io.{BufferedInputStream, DataInputStream, IOException, InputStream}
+import java.io.{DataInputStream, IOException, InputStream}
+
+import ru.makkarpov.scalingua.MergedLanguage.MessageData
 
 /**
   * A compiled representation of .po file that requires much less code to parse. We cannot embed all strings
@@ -87,6 +89,8 @@ abstract class CompiledLanguage extends Language with PluralFunction {
 
   override def id: LanguageId = _id
 
+  def messageData = MessageData(singular, singularCtx, plural, pluralCtx)
+
   override def singular(msgid: String): String = singular.getOrElse(msgid, msgid)
   override def singular(msgctx: String, msgid: String): String = singularCtx.getOrElse(msgctx -> msgid, msgid)
 
@@ -100,4 +104,11 @@ abstract class CompiledLanguage extends Language with PluralFunction {
       case Some(tr) => tr(plural(n))
       case None => if (n == 1) msgid else msgidPlural
     }
+
+  override def merge(other: Language): Language = other match {
+    case ml: MergedLanguage => new MergedLanguage(id, messageData.merge(ml.data), this)
+    case cc: CompiledLanguage => new MergedLanguage(id, messageData.merge(cc.messageData), this)
+    case Language.English => other
+    case _ => throw new NotImplementedError("Merge is supported only for MergedLanguage and CompiledLanguage")
+  }
 }

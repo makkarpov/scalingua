@@ -27,6 +27,12 @@ object Scalingua extends AutoPlugin {
 
     val localePackage = settingKey[String]("A package with compiled locale files")
 
+    val implicitContext = settingKey[Option[String]](
+                                  "Context that will get implicitly added to the beginning of each message. "+
+                                  "Useful to scope messages of whole project.")
+
+    val includeImplicitContext = settingKey[Boolean]("Specifies whether to include implicit context in compiled messages")
+
     // Internal task just to make `resourceGenerators` happy. Does not have any settings,
     // uses them from `compileLocales` task.
     val packageLocales = taskKey[Seq[File]]("Compile *.po files to packed binary files")
@@ -45,6 +51,8 @@ object Scalingua extends AutoPlugin {
   def localeSettings = Seq(
     templateTarget := crossTarget.value / "messages" / (Defaults.nameForSrc(configuration.value.name) + ".pot"),
     localePackage := "locales",
+    implicitContext := None,
+    includeImplicitContext := true,
 
     includeFilter in compileLocales := "*.po",
     excludeFilter in compileLocales := HiddenFileFilter,
@@ -71,7 +79,13 @@ object Scalingua extends AutoPlugin {
     managedResourceDirectories <+= target in packageLocales,
 
     scalacOptions += "-Xmacro-settings:scalingua:target=" + templateTarget.value.getCanonicalPath,
-    scalacOptions += "-Xmacro-settings:scalingua:baseDir=" + longestCommonPrefix(sourceDirectories.value)
+    scalacOptions += "-Xmacro-settings:scalingua:baseDir=" + longestCommonPrefix(sourceDirectories.value),
+    scalacOptions ++= {
+      implicitContext.value match {
+        case Some(s) => Seq("-Xmacro-settings:scalingua:implicitContext=" + s)
+        case None => Nil
+      }
+    }
   )
 
   private def longestCommonPrefix(s: Seq[File]) = s match {
@@ -111,6 +125,9 @@ object Scalingua extends AutoPlugin {
   def withGenContext(task: TaskKey[Seq[File]], fileFormat: String)(f: GenerationContext => Unit) = Def.task {
     val baseTgt = (target in task).value
     val pkg = (localePackage in task).value
+    val implicitCtx =
+      if ((includeImplicitContext in task).value) (implicitContext in task).value.filter(_.nonEmpty)
+      else None
     val log = streams.value.log
 
     val langPattern = "^([a-z]{2})_([A-Z]{2})\\.po$".r
@@ -121,7 +138,7 @@ object Scalingua extends AutoPlugin {
         val tgt = filePkg(baseTgt, pkg) / StringUtils.interpolate(fileFormat, "l" -> language, "c" -> country)
         createParent(tgt)
 
-        val genCtx = GenerationContext(pkg, LanguageId(language, country), src, tgt, log)
+        val genCtx = GenerationContext(pkg, implicitCtx, LanguageId(language, country), src, tgt, log)
         try f(genCtx)
         catch {
           case t: Throwable =>

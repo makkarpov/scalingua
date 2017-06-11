@@ -32,4 +32,6 @@ class MockLang(s: String) extends Language {
   private def parts(code: String, args: Any*): String = {
     s"{$code$s:" + args.map(_.toString.replaceAll("%\\(([^)]+)\\)", "%%($1)[%($1)]")).mkString(":") + "}"
   }
+
+  override def merge(other: Language): Language = throw new NotImplementedError("MockLang.merge")
 }

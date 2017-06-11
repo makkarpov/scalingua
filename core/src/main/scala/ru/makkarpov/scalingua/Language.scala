@@ -34,6 +34,8 @@ object Language {
     override def plural(msgid: String, msgidPlural: String, n: Long): String = if (n != 1) msgidPlural else msgid
     override def plural(msgctx: String, msgid: String, msgidPlural: String, n: Long): String =
       if (n != 1) msgidPlural else msgid
+
+    override def merge(other: Language): Language = other
   }
 }
 
@@ -83,4 +85,13 @@ trait Language {
     * @return Resolved plural form of message
     */
   def plural(msgctx: String, msgid: String, msgidPlural: String, n: Long): String
+
+  /**
+    * Merges this language with specified `other`. Conflicting messages will be resolved
+    * using `this` language. Plural function will be used from `this` language.
+    *
+    * @param other Language to merge
+    * @return Merged language
+    */
+  def merge(other: Language): Language
 }

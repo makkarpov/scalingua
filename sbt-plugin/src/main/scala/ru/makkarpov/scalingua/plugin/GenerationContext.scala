@@ -19,8 +19,17 @@ package ru.makkarpov.scalingua.plugin
 import ru.makkarpov.scalingua.LanguageId
 import sbt._
 
-case class GenerationContext(pkg: String, lang: LanguageId, src: File, target: File, log: Logger) {
+case class GenerationContext(pkg: String, implicitCtx: Option[String], lang: LanguageId, src: File, target: File,
+                             log: Logger)
+{
   val srcHash = src.hashString
+
+  def mergeContext(ctx: Option[String]): Option[String] = (implicitCtx, ctx) match {
+    case (None,    None)    => None
+    case (Some(x), None)    => Some(x)
+    case (None,    Some(y)) => Some(y)
+    case (Some(x), Some(y)) => Some(x + ":" + y)
+  }
 
   def filePrefix = "/" + pkg.replace('.', '/') + (if (pkg.nonEmpty) "/" else "")
 }

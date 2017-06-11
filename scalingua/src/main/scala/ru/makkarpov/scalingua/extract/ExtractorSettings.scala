@@ -32,9 +32,18 @@ object ExtractorSettings {
         case Array(x) => c.abort(c.enclosingPosition, s"Invalid setting: `$x`")
       }.toMap
 
-    if (!setts.contains("target")) ExtractorSettings(enable = false, "", new File("messages.pot"))
-    else ExtractorSettings(enable = true, setts.getOrElse("baseDir", ""), new File(setts("target")))
+    val implicitContext = setts.get("implicitContext").filter(_.nonEmpty)
+
+    if (!setts.contains("target")) ExtractorSettings(enable = false, "", new File("messages.pot"), implicitContext)
+    else ExtractorSettings(enable = true, setts.getOrElse("baseDir", ""), new File(setts("target")), implicitContext)
   }
 }
 
-case class ExtractorSettings(enable: Boolean, srcBaseDir: String, targetFile: File)
+case class ExtractorSettings(enable: Boolean, srcBaseDir: String, targetFile: File, implicitContext: Option[String]) {
+  def mergeContext(ctx: Option[String]): Option[String] = (implicitContext, ctx) match {
+    case (None,    None)    => None
+    case (Some(x), None)    => Some(x)
+    case (None,    Some(y)) => Some(y)
+    case (Some(x), Some(y)) => Some(x + ":" + y)
+  }
+}
