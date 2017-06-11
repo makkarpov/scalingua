@@ -98,4 +98,25 @@ class Messages(langs: Language*) {
     * @return
     */
   def containsExact(lang: LanguageId): Boolean = byCountry.contains(lang)
+
+  /**
+    * @return Set of all languages defined in this Messages
+    */
+  def definedLanguages: Set[LanguageId] = byCountry.keySet
+
+  /**
+    * Merge this messages with `other`. Conflicting messages will be resolved from `this`.
+    */
+  def merge(other: Messages): Messages = {
+    val newLanguages = Seq.newBuilder[Language]
+
+    for (langId <- definedLanguages ++ other.definedLanguages) {
+      newLanguages +=
+        (if (containsExact(langId) && other.containsExact(langId)) this (langId).merge(other(langId))
+        else if (containsExact(langId)) this (langId)
+        else other(langId))
+    }
+
+    new Messages(newLanguages.result():_*)
+  }
 }
