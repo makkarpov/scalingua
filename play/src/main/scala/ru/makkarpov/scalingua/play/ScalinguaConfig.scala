@@ -19,5 +19,5 @@ package ru.makkarpov.scalingua.play
 import play.api.Configuration
 
 class ScalinguaConfig(cfg: Configuration) {
-  val localePackage: String = cfg.getString("scalingua.package").getOrElse("locales")
+  val localePackage: String = cfg.getOptional[String]("scalingua.package").getOrElse("locales")
 }

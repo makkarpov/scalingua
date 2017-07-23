@@ -1,7 +1,7 @@
 import sbt.Keys._
 
 name := "scalingua-root"
-version := "0.6.2"
+version := "0.6.3"
 crossPaths := true
 
 publishArtifact := false
@@ -15,7 +15,7 @@ val common = Seq(
 
   crossPaths := true,
   scalaVersion := "2.10.4",
-  crossScalaVersions := Seq("2.10.4", "2.11.7", "2.12.1"),
+  crossScalaVersions := Seq("2.10.4", "2.11.11", "2.12.2"),
   scalacOptions ++= Seq( "-Xfatal-warnings", "-feature", "-deprecation" ),
 
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % Test,
@@ -92,12 +92,12 @@ lazy val play = project
 
     // Recent versions of Play supports only recent version of Scala.
     // We should keep `crossPath` to keep naming consistent
-    scalaVersion := "2.11.7",
-    crossScalaVersions := Seq(scalaVersion.value),
+    scalaVersion := "2.11.11",
+    crossScalaVersions := Seq("2.11.11", "2.12.2"),
 
     libraryDependencies ++= Seq(
-      "com.typesafe.play" %% "twirl-api" % "1.1.1",
-      "com.typesafe.play" %% "play" % "2.5.0"
+      "com.typesafe.play" %% "twirl-api" % "1.3.2",
+      "com.typesafe.play" %% "play" % "2.6.0"
     )
   ).dependsOn(scalingua)
 
