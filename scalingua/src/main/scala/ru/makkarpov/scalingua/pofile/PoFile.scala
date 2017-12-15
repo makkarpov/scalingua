@@ -44,6 +44,7 @@ object PoFile {
   val lineAnyHeader           = "^#.*$".r
   val lineTrComment           = "^# \\s*(.*)$".r // translator comment
   val lineExComment           = "^#\\.\\s*(.*)$".r // extracted comment
+  val lineOtherComment        = "^#[^:,.].*$".r // other unknown comment
   val lineLocation            = "^#:\\s*(.+):(\\d+)$".r // location
   val lineFlags               = "^#,\\s*(.+)$".r // flags like "#, fuzzy"
 
@@ -101,6 +102,7 @@ object PoFile {
       while (lines.hasNext && lineAnyHeader.findFirstIn(lines.head).isDefined) lines.next() match {
         case lineTrComment(cmt) => trComments :+= cmt
         case lineExComment(cmt) => exComments :+= cmt
+        case lineOtherComment() => // ignore it.
         case lineLocation(fle, lne) => locations :+= MessageLocation(fle, lne.toInt)
         case lineFlags(flgStr) =>
           for (s <- flgStr.split(",").map(_.trim.toLowerCase))

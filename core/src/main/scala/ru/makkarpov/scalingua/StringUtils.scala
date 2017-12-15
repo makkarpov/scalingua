@@ -104,7 +104,6 @@ object StringUtils {
       case '\b' => ret ++= "\\b"
       case '\f' => ret ++= "\\f"
       case '\\' => ret ++= "\\\\"
-      case '\'' => ret ++= "\\\'"
       case '\"' => ret ++= "\\\""
       case x if canPrintLiterally(x) => ret += x
       case x => ret ++= "\\u%04X" format x.toInt

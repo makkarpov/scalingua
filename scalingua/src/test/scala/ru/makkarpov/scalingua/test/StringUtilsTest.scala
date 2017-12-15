@@ -31,7 +31,7 @@ class StringUtilsTest extends FlatSpec with Matchers {
     // Samples with simple one-letter escapes:
     f("\n") shouldBe "\\n"
     f("\\") shouldBe "\\\\"
-    f("a string with \r, \n, \b, \f, \t, \', \", \\") shouldBe "a string with \\r, \\n, \\b, \\f, \\t, \\', \\\", \\\\"
+    f("a string with \r, \n, \b, \f, \t, \', \", \\") shouldBe "a string with \\r, \\n, \\b, \\f, \\t, \', \\\", \\\\"
 
     // Samples with unicode escapes:
     f("⚡ high voltage ⚡") shouldBe "\\u26A1 high voltage \\u26A1"

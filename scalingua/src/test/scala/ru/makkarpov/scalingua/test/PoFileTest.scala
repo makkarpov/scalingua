@@ -45,6 +45,8 @@ class PoFileTest extends FlatSpec with Matchers {
         |# other comment
         |#: otherfile.scala:25
         |#. other tr comment
+        |#~ weird comment
+        |#qweqweqwe
       """.stripMargin) shouldBe Seq.empty
     t("""# 123
         |
@@ -56,13 +58,14 @@ class PoFileTest extends FlatSpec with Matchers {
         |
         |
         |#. tr comment
+        |
+        |#!!! other weird comment
+        |#12345
       """.stripMargin) shouldBe Seq.empty
   }
 
   it should "discard incorrect header entries" in {
-    an [IllegalArgumentException] shouldBe thrownBy(t("#!123"))
     an [IllegalArgumentException] shouldBe thrownBy(t("#, wtfflag"))
-    an [IllegalArgumentException] shouldBe thrownBy(t("#"))
     an [IllegalArgumentException] shouldBe thrownBy(t("#: test.scala")) // without line
   }
 
