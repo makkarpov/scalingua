@@ -58,13 +58,13 @@ object Scalingua extends AutoPlugin {
     excludeFilter in compileLocales := HiddenFileFilter,
     sourceDirectories in compileLocales := Seq(sourceDirectory.value / "locales"),
 
-    sources in compileLocales <<= Defaults.collectFiles(
+    sources in compileLocales := Defaults.collectFiles(
       sourceDirectories in compileLocales,
       includeFilter in compileLocales,
       excludeFilter in compileLocales
-    ),
+    ).value,
 
-    sources in packageLocales <<= sources in compileLocales,
+    sources in packageLocales := (sources in compileLocales).value,
 
     target in compileLocales := crossTarget.value / "locales" / Defaults.nameForSrc(configuration.value.name) / "scala",
     target in packageLocales := crossTarget.value / "locales" / Defaults.nameForSrc(configuration.value.name) / "resources",
@@ -72,11 +72,11 @@ object Scalingua extends AutoPlugin {
     compileLocales := compileLocalesTask.value,
     packageLocales := packageLocalesTask.value,
 
-    sourceGenerators <+= compileLocales,
-    resourceGenerators <+= packageLocales,
+    sourceGenerators += compileLocales.taskValue,
+    resourceGenerators += packageLocales.taskValue,
 
-    managedSourceDirectories <+= target in compileLocales,
-    managedResourceDirectories <+= target in packageLocales,
+    managedSourceDirectories += (target in compileLocales).value,
+    managedResourceDirectories += (target in packageLocales).value,
 
     scalacOptions += "-Xmacro-settings:scalingua:target=" + templateTarget.value.getCanonicalPath,
     scalacOptions += "-Xmacro-settings:scalingua:baseDir=" + longestCommonPrefix(sourceDirectories.value),

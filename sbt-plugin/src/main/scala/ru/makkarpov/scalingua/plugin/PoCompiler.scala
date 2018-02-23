@@ -157,7 +157,7 @@ object PoCompiler {
            |import ru.makkarpov.scalingua.Messages
            |
            |object Languages extends Messages(
-           |  ${langs.map(l => s"Language_${l.language}_${l.country}").mkString("\n  ")}
+           |  ${langs.map(l => s"Language_${l.language}_${l.country}").mkString(",\n  ")}
            |)
          """.stripMargin
       )

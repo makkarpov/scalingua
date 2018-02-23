@@ -1,7 +1,7 @@
 import sbt.Keys._
 
 name := "scalingua-root"
-version := "0.6.4"
+version := "0.6.5"
 crossPaths := true
 
 publishArtifact := false
@@ -74,8 +74,8 @@ lazy val scalingua = project
     libraryDependencies ++= {
       CrossVersion.binaryScalaVersion(scalaVersion.value) match {
         case "2.10" => Seq(
-          compilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full),
-          "org.scalamacros" %% "quasiquotes" % "2.0.0"
+          compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
+          "org.scalamacros" %% "quasiquotes" % "2.0.1"
         )
         case _ => Nil
       }

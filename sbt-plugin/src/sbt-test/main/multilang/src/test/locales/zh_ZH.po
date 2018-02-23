@@ -1,0 +1,16 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"PO-Revision-Date: 2018-02-23 11:49+0300\n"
+"Last-Translator: Maxim Karpov <me@makkarpov.ru>\n"
+"Language-Team: Chinese\n"
+"Language: zh_ZH\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ASCII\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#  !Generated: 2018-02-23 11:47:45
+#: src/test/scala/Test.scala:19 src/test/scala/Test.scala:25
+#: src/test/scala/Test.scala:13 src/test/scala/Test.scala:31
+msgid "Good evening!"
+msgstr "晚上好！"
