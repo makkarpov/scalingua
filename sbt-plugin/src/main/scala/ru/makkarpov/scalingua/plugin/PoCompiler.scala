@@ -150,6 +150,8 @@ object PoCompiler {
            |    load()
            |  }
            |
+           |  def __sourceHash: String = "${ctx.srcHash}"
+           |
            |  val numPlurals = ${pf.numPlurals}
            |  def plural(arg: Long): Int = (${pf.expr.scalaExpression}).toInt
            |}
