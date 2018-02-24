@@ -133,13 +133,22 @@ object PoCompiler {
            |
            |object Language_${ctx.lang.language}_${ctx.lang.country}
            |extends CompiledLanguage with PluralFunction {
-           |  initialize({
-           |    val str = getClass.getResourceAsStream("${ctx.filePrefix}data_${ctx.lang.language}_${ctx.lang.country}.bin")
-           |    if (str eq null) {
-           |      throw new IllegalArgumentException("Resource not found for language ${ctx.lang.language}_${ctx.lang.country}")
-           |    }
-           |    str
-           |  })
+           |  load()
+           |
+           |  def load(): Unit = {
+           |    initialize({
+           |      val str = getClass.getResourceAsStream("${ctx.filePrefix}data_${ctx.lang.language}_${ctx.lang.country}.bin")
+           |      if (str eq null) {
+           |        throw new IllegalArgumentException("Resource not found for language ${ctx.lang.language}_${ctx.lang.country}")
+           |      }
+           |      str
+           |    })
+           |  }
+           |
+           |  // Cached language data should be invalidated on JRebel reload
+           |  def __rebelReload(): Unit = {
+           |    load()
+           |  }
            |
            |  val numPlurals = ${pf.numPlurals}
            |  def plural(arg: Long): Int = (${pf.expr.scalaExpression}).toInt
