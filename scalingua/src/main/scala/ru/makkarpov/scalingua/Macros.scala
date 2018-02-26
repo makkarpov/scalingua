@@ -267,12 +267,17 @@ object Macros {
     // Extract literals:
     val rawCtx = ctxTree.map(stringLiteral(c))
     val ctx = session.setts.mergeContext(rawCtx)
-    val msg = stringLiteral(c)(msgTree)
-    val plural = pluralTree.map { case (s, n, i) => (stringLiteral(c)(s), n, i) }
-    val args = argsTree.map(tupleLiteral(c)(_)) ++ (plural match {
+    val args = argsTree.map(tupleLiteral(c)(_)) ++ (pluralTree match {
       case Some((_, n, true)) => Seq("n" -> n)
       case _ => Nil
     })
+
+    // Strip off introduced escapes if string does not contain interpolation
+    def unescape(s: String): String =
+      if (args.isEmpty) StringUtils.interpolate(s) else s
+
+    val msg = unescape(stringLiteral(c)(msgTree))
+    val plural = pluralTree.map { case (s, n, i) => (unescape(stringLiteral(c)(s)), n, i) }
 
     // Call message extractor:
     plural match {
@@ -282,6 +287,9 @@ object Macros {
 
     // Verify variables consistency:
     def verifyVariables(s: String): Unit = {
+      if (args.isEmpty)
+        return // no interpolation, nothing to verify
+
       val varsArg = args.map(_._1).toSet
       val varsStr = StringUtils.extractVariables(s).toSet
 
@@ -373,12 +381,17 @@ object Macros {
         argName = inferredNames(idx)
         part = parts(idx + 1)
       } yield {
-        if (part.startsWith(StringUtils.VariableCharacter.toString + StringUtils.VariableParentheses._1)) {
+        if (part.startsWith(StringUtils.VariableStartStr)) {
           val pos = part.indexOf(StringUtils.VariableParentheses._2)
           val name = part.substring(2, pos)
           val filtered = part.substring(pos + 1)
 
           (filtered, name, args(idx))
+        } else if (part.startsWith(StringUtils.VariableEscapeStr)) {
+          (StringUtils.VariableStr + part.substring(2), argName.get, args(idx))
+        } else if (part.startsWith(StringUtils.VariableStr)) {
+          c.abort(c.enclosingPosition, s"Stray '${StringUtils.VariableStr}' at the beginning of part: it should start "+
+            s"either with '${StringUtils.VariableEscapeStr}' or '${StringUtils.VariableStartStr}'")
         } else {
           if (argName.isEmpty)
             c.abort(c.enclosingPosition, s"No name is defined for part #$idx (${Compat.prettyPrint(c)(args(idx))})")
@@ -387,8 +400,8 @@ object Macros {
         }
       }
 
-    (parts.head + filtered.map {
-      case (part, name, _) => s"%($name)$part"
+    (StringUtils.escapeInterpolation(parts.head) + filtered.map {
+      case (part, name, _) => s"%($name)${StringUtils.escapeInterpolation(part)}"
     }.mkString, filtered.map {
       case (_, name, value) => q"($name, $value)"
     })

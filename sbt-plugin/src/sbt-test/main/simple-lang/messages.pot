@@ -17,3 +17,25 @@ msgid_plural "There is %(n) dogs!"
 msgstr[0] ""
 msgstr[1] ""
 
+#: src/test/scala/Test.scala:47
+msgid "Percents! %"
+msgstr ""
+
+#: src/test/scala/Test.scala:48
+msgid "Percents!! %"
+msgstr ""
+
+#: src/test/scala/Test.scala:51
+msgid "Percents with variables%%: %(x), percents%%"
+msgstr ""
+
+#: src/test/scala/Test.scala:53
+msgid "Percents after variable: %(x)%%"
+msgstr ""
+
+#: src/test/scala/Test.scala:56
+msgid "Look, I have %(x) percent: %%!"
+msgid_plural "Look, I have %(x) percents: %%!"
+msgstr[0] ""
+msgstr[1] ""
+

@@ -40,4 +40,26 @@ class Test extends FlatSpec with Matchers {
     t("Hello, world!") shouldBe "Привет, мир!"
     p("There is %(n) dog!", "There is %(n) dogs!", 7) shouldBe "Здесь 7 собак!"
   }
+
+  it should "handle percent signs" in {
+    implicit val langId = LanguageId("ru-RU")
+
+    t"Percents! %" shouldBe "Проценты! %"
+    t("Percents!! %%") shouldBe "Проценты!! %"
+
+    val x = 1
+    t"Percents with variables%: $x, percents%" shouldBe s"Проценты с перменными%: $x, проценты%"
+
+    t"Percents after variable: $x%%" shouldBe s"Проценты после переменной: $x%"
+
+    // Plural:
+    p"Look, I have $x percent${S.s}: %!" shouldBe s"Смотри, у меня $x процент: %!"
+  }
+
+  it should "reject invalid percent signs" in {
+    """
+      val x = 123
+      t"Test: $x% qweqwe"
+    """ shouldNot typeCheck
+  }
 }

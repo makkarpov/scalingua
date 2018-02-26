@@ -29,7 +29,11 @@ object StringUtils {
   /**
     * Opening and closing interpolation parentheses
     */
-  val VariableParentheses = '(' -> ')'
+  val VariableParentheses: (Char, Char) = '(' -> ')'
+
+  val VariableStr: String = VariableCharacter.toString
+  val VariableEscapeStr: String = VariableStr + VariableStr
+  val VariableStartStr: String = VariableStr + VariableParentheses._1
 
   class InvalidInterpolationException(msg: String) extends IllegalArgumentException(msg)
 
@@ -55,7 +59,7 @@ object StringUtils {
         ret ++= s.substring(cursor, pos)
 
         if (pos + 1 >= s.length)
-          throw new IllegalArgumentException(s"Unexpected end of stirng at index $pos")
+          throw new IllegalArgumentException(s"Unexpected end of string at index $pos")
 
         val escapeLength = s(pos + 1) match {
           case 'u' => 4
@@ -220,6 +224,31 @@ object StringUtils {
           case x => throw new InvalidInterpolationException(s"Invalid interpolation character after '$VariableCharacter': " +
             s"'$x' (escape '$VariableCharacter' by typing it twice)")
         }
+      }
+    }
+
+    result.result()
+  }
+
+  /**
+    * Escapes given interpolation string, replacing all occurences of '%' to '%%'
+    * @param s Raw string
+    * @return Escaped string
+    */
+  def escapeInterpolation(s: String): String = {
+    val result = new StringBuilder
+
+    var cursor = 0
+    while (cursor < s.length) {
+      val pos = s.indexOf(VariableCharacter, cursor)
+
+      if (pos == -1) {
+        result ++= s.substring(cursor)
+        cursor = Int.MaxValue
+      } else {
+        result ++= s.substring(cursor, pos)
+        result ++= "%%"
+        cursor = pos + 1
       }
     }
 

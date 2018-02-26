@@ -23,3 +23,26 @@ msgid_plural "There is %(n) dogs!"
 msgstr[0] "Здесь %(n) собака!"
 msgstr[1] "Здесь %(n) собаки!"
 msgstr[2] "Здесь %(n) собак!"
+
+#: src/test/scala/Test.scala:47
+msgid "Percents! %"
+msgstr "Проценты! %"
+
+#: src/test/scala/Test.scala:48
+msgid "Percents!! %"
+msgstr "Проценты!! %"
+
+#: src/test/scala/Test.scala:51
+msgid "Percents with variables%%: %(x), percents%%"
+msgstr "Проценты с перменными%%: %(x), проценты%%"
+
+#: src/test/scala/Test.scala:53
+msgid "Percents after variable: %(x)%%"
+msgstr "Проценты после переменной: %(x)%%"
+
+#: src/test/scala/Test.scala:56
+msgid "Look, I have %(x) percent: %%!"
+msgid_plural "Look, I have %(x) percents: %%!"
+msgstr[0] "Смотри, у меня %(x) процент: %%!"
+msgstr[1] "Смотри, у меня %(x) процента: %%!"
+msgstr[2] "Смотри, у меня %(x) процентов: %%!"
