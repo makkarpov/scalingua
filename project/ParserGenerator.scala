@@ -61,7 +61,8 @@ object ParserGenerator extends AutoPlugin {
 
   def generateLexerTask =
     process(sources in generateLexer, target in generateLexer) { (f, t) =>
-      runJava(classOf[jflex.Main], f.getCanonicalPath, "-d", t.getCanonicalPath)
+      val skel = new File("project/skeleton.jflex")
+      runJava(classOf[jflex.Main], f.getCanonicalPath, "-d", t.getCanonicalPath, "--skel", skel.getCanonicalPath)
     }
 
   def generateParserTask =

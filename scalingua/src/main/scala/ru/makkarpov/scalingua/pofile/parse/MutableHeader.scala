@@ -20,16 +20,23 @@ class MutableHeader {
     case ' ' => comments += cmt.comment.trim
     case '.' => extractedComments += cmt.comment.trim
     case ':' =>
-      cmt.comment.trim.split(":") match {
-        case Array(file, line) =>
-          try locations += MessageLocation(file, line.toInt)
+      // It seems that GNU .po utilities can combine locations in a single line:
+      //   #: some.file:123 other.file:456
+      // but specifications does not specify how to handle spaces in a string.
+      // So ignore there references, Scalingua itself will never produce such lines.
+      val str = cmt.comment.trim
+      val idx = str.lastIndexOf(':')
+      if (idx != -1) {
+        val file = str.substring(0, idx)
+        val line =
+          try str.substring(idx + 1)
           catch {
             case _: NumberFormatException => throw ParserException(left, right, "cannot parse line number")
           }
 
-        case Array(file) => locations += MessageLocation(file, -1)
-
-        case _ => throw ParserException(left, right, "incorrect location format")
+        locations += MessageLocation(file, line.toInt)
+      } else {
+        locations += MessageLocation(str, -1)
       }
 
     case ',' =>

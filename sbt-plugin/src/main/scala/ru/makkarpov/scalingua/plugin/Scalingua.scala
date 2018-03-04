@@ -141,6 +141,9 @@ object Scalingua extends AutoPlugin {
         val genCtx = GenerationContext(pkg, implicitCtx, LanguageId(language, country), src, tgt, log)
         try f(genCtx)
         catch {
+          case p: ParseFailedException =>
+            throw p
+
           case t: Throwable =>
             throw new IllegalArgumentException(s"Failed to compile ${src.getCanonicalPath}", t)
         }

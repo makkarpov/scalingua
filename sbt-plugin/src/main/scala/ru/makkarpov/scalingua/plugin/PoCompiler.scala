@@ -18,13 +18,51 @@ package ru.makkarpov.scalingua.plugin
 
 import java.io._
 import java.nio.charset.StandardCharsets
+import java_cup.runtime.ComplexSymbolFactory.Location
 
 import ru.makkarpov.scalingua.LanguageId
 import ru.makkarpov.scalingua.plural.ParsedPlural
+import ru.makkarpov.scalingua.pofile.parse.{LexerException, ParserException}
 import ru.makkarpov.scalingua.pofile.{Message, MultipartString, PoFile}
 
 object PoCompiler {
   val ScalaHashPrefix = "//# Hash: "
+
+  def catchErrors[R](ctx: GenerationContext)(f: => R): R = {
+    def report(left: Location, right: Location, msg: String, t: Throwable): Nothing = {
+      val lineNum = left.getLine
+      val ofsStart = left.getColumn
+
+      val rd = new BufferedReader(new InputStreamReader(new FileInputStream(ctx.src), StandardCharsets.UTF_8))
+      var line: String = ""
+
+      for (_ <- 0 to lineNum) line = rd.readLine()
+
+      if (line == null) ctx.log.error(s"at ${ctx.src.getName}:$lineNum:$ofsStart: $msg")
+      else {
+        val ofsEnd =
+          if (right.getLine > left.getLine) line.length
+          else if (right.getColumn > line.length) line.length
+          else if (right.getColumn <= left.getColumn) left.getColumn + 1
+          else right.getColumn
+
+        val subscript = " " * ofsStart + (if (ofsEnd - ofsStart <= 1) "^" else "~") * (ofsEnd - ofsStart)
+
+        ctx.log.error(s"at ${ctx.src.getName}:$lineNum:$ofsStart: $msg")
+        ctx.log.error(s"")
+        ctx.log.error(s"$line")
+        ctx.log.error(s"$subscript")
+      }
+
+      throw ParseFailedException(s"failed to parse ${ctx.src.getCanonicalPath}", t)
+    }
+
+    try f
+    catch {
+      case p: ParserException => report(p.left, p.right, p.msg, p)
+      case l: LexerException => report(l.loc, l.loc, l.msg, l)
+    }
+  }
 
   def doPackaging(ctx: GenerationContext): Unit = {
     // Should we regenerate file?
@@ -55,28 +93,30 @@ object PoCompiler {
         for (s <- trs) dos.writeUTF(s.merge)
       }
 
-      for (m <- PoFile(ctx.src)) m match {
-        case Message.Singular(_, ctxt, id, tr) =>
-          ctx.mergeContext(ctxt.map(_.merge)) match {
-            case None => dos.writeByte(1)
-            case Some(x) =>
-              dos.writeByte(2)
-              dos.writeUTF(x)
-          }
+      catchErrors(ctx) {
+        for (m <- PoFile(ctx.src)) m match {
+          case Message.Singular(_, ctxt, id, tr) =>
+            ctx.mergeContext(ctxt.map(_.merge)) match {
+              case None => dos.writeByte(1)
+              case Some(x) =>
+                dos.writeByte(2)
+                dos.writeUTF(x)
+            }
 
-          dos.writeUTF(id.merge)
-          dos.writeUTF(tr.merge)
+            dos.writeUTF(id.merge)
+            dos.writeUTF(tr.merge)
 
-        case Message.Plural(_, ctxt, id, _, trs) =>
-          ctx.mergeContext(ctxt.map(_.merge)) match {
-            case None => dos.writeByte(3)
-            case Some(x) =>
-              dos.writeByte(4)
-              dos.writeUTF(x)
-          }
+          case Message.Plural(_, ctxt, id, _, trs) =>
+            ctx.mergeContext(ctxt.map(_.merge)) match {
+              case None => dos.writeByte(3)
+              case Some(x) =>
+                dos.writeByte(4)
+                dos.writeUTF(x)
+            }
 
-          dos.writeUTF(id.merge)
-          writePlurals(trs)
+            dos.writeUTF(id.merge)
+            writePlurals(trs)
+        }
       }
 
       dos.writeByte(0)
@@ -103,7 +143,7 @@ object PoCompiler {
         return
     }
 
-    val hdr = {
+    val hdr = catchErrors(ctx) {
       val iter = PoFile(ctx.src)
       try iter.find(_.message.isEmpty)
       finally iter.size // Consume whole iterator and close stream
