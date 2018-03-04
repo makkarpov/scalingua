@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import ru.makkarpov.scalingua.StringUtils
+import ru.makkarpov.scalingua.pofile.parse.{ErrorReportingParser, PoLexer}
 
 object PoFile {
   /**
@@ -56,130 +57,11 @@ object PoFile {
 
   private def headerComment(s: String) = s"#  !Generated: $s"
 
-  def apply(f: File): Iterator[Message] = apply(new FileInputStream(f))
+  def apply(f: File): Seq[Message] = apply(new FileInputStream(f), f.getName)
 
-  def apply(is: InputStream): Iterator[Message] = {
-    val input = new BufferedReader(new InputStreamReader(is, encoding))
-
-    val header = headerComment("")
-    val lines = Iterator.continually(input.readLine()).takeWhile(_ ne null).map(_.trim)
-                    .filter(x => x.nonEmpty && !x.startsWith(header)).buffered
-
-    def readEntry(): (String, MultipartString) = {
-      if (!lines.hasNext) {
-        input.close()
-        throw new IllegalArgumentException("Premature end of stream")
-      }
-
-      val entryLiteral(cmd, stringHead) = lines.next()
-      var done = false
-      var strings = Seq(StringUtils.unescape(stringHead))
-      while (!done && lines.hasNext) lines.head match {
-        case lineLiteral(str) =>
-          strings :+= StringUtils.unescape(str)
-          lines.next() // consume
-        case _ => done = true
-      }
-      (cmd, MultipartString(strings:_*))
-    }
-
-    def peekEntry(): Option[String] = {
-      if (!lines.hasNext)
-        return None
-
-      lines.head match {
-        case entryLiteral(cmd, _) => Some(cmd)
-        case _ => None
-      }
-    }
-
-    def readHeader(): MessageHeader = {
-      var trComments = Seq.empty[String]
-      var exComments = Seq.empty[String]
-      var locations = Seq.empty[MessageLocation]
-      var flags = MessageFlag.ValueSet.empty
-
-      while (lines.hasNext && lineAnyHeader.findFirstIn(lines.head).isDefined) lines.next() match {
-        case lineTrComment(cmt) => trComments :+= cmt
-        case lineExComment(cmt) => exComments :+= cmt
-        case lineOtherComment() => // ignore it.
-        case lineLocation(fle, lne) => locations :+= MessageLocation(fle, lne.toInt)
-        case lineFlags(flgStr) =>
-          for (s <- flgStr.split(",").map(_.trim.toLowerCase))
-            flags += MessageFlag.values.find(_.toString == s).getOrElse {
-              throw new IllegalArgumentException(s"Undefined message flag: '$s'")
-            }
-        case x => throw new IllegalArgumentException(s"Incorrect header line: '$x'")
-      }
-
-      MessageHeader(trComments, exComments, locations, flags)
-    }
-
-    def readMessage(): Message = {
-      if (!lines.hasNext) {
-        input.close()
-        return null
-      }
-
-      try {
-        val hdr = readHeader()
-
-        if (!lines.hasNext) {
-          input.close()
-          return null
-        }
-
-        val (msgCtx, msgId) = readEntry() match {
-          case ("msgctxt", ctxt) =>
-            val ("msgid", id) = readEntry()
-            (Some(ctxt), id)
-
-          case ("msgid", id) => (None, id)
-
-          case (x, _) => throw new IllegalArgumentException(s"Either `msgctxt` or `msgid` expected, got `$x`")
-        }
-
-        peekEntry() match {
-          case Some("msgstr") => // singular entry
-            val ("msgstr", msgStr) = readEntry()
-            Message.Singular(hdr, msgCtx, msgId, msgStr)
-
-          case Some("msgid_plural") => // plural entry
-            val ("msgid_plural", msgIdPlural) = readEntry()
-
-            var translations = Seq.empty[MultipartString]
-            var done = false
-            do {
-              val nextStr = s"msgstr[${translations.size}]"
-
-              peekEntry() match {
-                case Some(`nextStr`) =>
-                  val (_, msgs) = readEntry()
-                  translations :+= msgs
-
-                case Some(e@entryMsgPlural()) =>
-                  throw new IllegalArgumentException(s"Entries are out-of-order: '$e'")
-
-                case _ => done = true
-              }
-            } while (!done)
-
-            Message.Plural(hdr, msgCtx, msgId, msgIdPlural, translations)
-
-          case Some(x) =>
-            throw new IllegalArgumentException(s"Bad entry: $x")
-
-          case None =>
-            throw new IllegalArgumentException("\"msgstr\" or \"msgid_plural\" expected.")
-        }
-      } catch {
-        case e: Exception =>
-          input.close()
-          throw e
-      }
-    }
-
-    Iterator.continually(readMessage()).takeWhile(_ ne null)
+  def apply(is: InputStream, filename: String = "<unknown>"): Seq[Message] = {
+    val parser = new ErrorReportingParser(new PoLexer(new InputStreamReader(is, StandardCharsets.UTF_8), filename))
+    parser.parse().value.asInstanceOf[Seq[Message]]
   }
 
   def update(f: File, messages: Iterator[Message]): Unit = {

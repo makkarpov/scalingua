@@ -63,7 +63,7 @@ object ExtractorSession {
     }
 
     def toMsg: Message = {
-      val header = MessageHeader(comments, extractedComments, locations.toSeq, flags)
+      val header = MessageHeader(comments, extractedComments, locations.toSeq, flags, None)
 
       msgidPlural match {
         case None => Message.Singular(header, context, msgid, translations.headOption.getOrElse(MultipartString.empty))

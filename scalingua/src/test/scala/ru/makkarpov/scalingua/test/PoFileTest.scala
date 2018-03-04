@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets
 
 import org.scalatest.{FlatSpec, Matchers}
 import ru.makkarpov.scalingua.pofile._
+import ru.makkarpov.scalingua.pofile.parse.{LexerException, ParserException}
 
 class PoFileTest extends FlatSpec with Matchers {
   def t(data: String): Seq[Message] = {
@@ -64,11 +65,6 @@ class PoFileTest extends FlatSpec with Matchers {
       """.stripMargin) shouldBe Seq.empty
   }
 
-  it should "discard incorrect header entries" in {
-    an [IllegalArgumentException] shouldBe thrownBy(t("#, wtfflag"))
-    an [IllegalArgumentException] shouldBe thrownBy(t("#: test.scala")) // without line
-  }
-
   it should "parse singular forms" in {
     t("""#  comment
         |#: file.scala:20
@@ -87,20 +83,21 @@ class PoFileTest extends FlatSpec with Matchers {
             Seq("comment"),
             Seq("tr comment"),
             Seq(MessageLocation("file.scala", 20)),
-            MessageFlag.ValueSet(MessageFlag.Fuzzy)
+            MessageFlag.ValueSet(MessageFlag.Fuzzy),
+            None
           ),
           context = None,
           message = MultipartString("test"),
           translation = MultipartString("1234")
         ),
         Message.Singular(
-          header = MessageHeader(Nil, Nil, Nil, MessageFlag.ValueSet.empty),
+          header = MessageHeader(Nil, Nil, Nil, MessageFlag.ValueSet.empty, None),
           context = None,
           message = MultipartString("1234"),
           translation = MultipartString("test")
         ),
         Message.Singular(
-          header = MessageHeader(Nil, Nil, Nil, MessageFlag.ValueSet.empty),
+          header = MessageHeader(Nil, Nil, Nil, MessageFlag.ValueSet.empty, None),
           context = None,
           message = MultipartString("escapes"),
           translation = MultipartString("\u0000\n\t\r")
@@ -122,7 +119,7 @@ class PoFileTest extends FlatSpec with Matchers {
         |"Than: just gettext\n"
       """.stripMargin) shouldBe Seq(
         Message.Singular(
-          header = MessageHeader(Seq("A PoFile header:"), Nil, Nil, MessageFlag.ValueSet.empty),
+          header = MessageHeader(Seq("A PoFile header:"), Nil, Nil, MessageFlag.ValueSet.empty, None),
           context = None,
           message = MultipartString(""),
           translation = MultipartString(
@@ -144,7 +141,7 @@ class PoFileTest extends FlatSpec with Matchers {
         |  msgstr "qwe"
       """.stripMargin) shouldBe Seq(
         Message.Singular(
-          header = MessageHeader(Seq("Header"), Nil, Nil, MessageFlag.ValueSet.empty),
+          header = MessageHeader(Seq("Header"), Nil, Nil, MessageFlag.ValueSet.empty, None),
           context = Some(MultipartString("con", "text")),
           message = MultipartString("123"),
           translation = MultipartString("qwe")
@@ -165,7 +162,7 @@ class PoFileTest extends FlatSpec with Matchers {
         |msgstr[0] "4"
       """.stripMargin) shouldBe Seq(
         Message.Plural(
-          header = MessageHeader(Nil, Nil, Nil, MessageFlag.ValueSet.empty),
+          header = MessageHeader(Nil, Nil, Nil, MessageFlag.ValueSet.empty, None),
           context = None,
           message = MultipartString("digit"),
           plural = MultipartString("digits"),
@@ -176,7 +173,7 @@ class PoFileTest extends FlatSpec with Matchers {
           )
         ),
         Message.Plural(
-          header = MessageHeader(Nil, Nil, Nil, MessageFlag.ValueSet.empty),
+          header = MessageHeader(Nil, Nil, Nil, MessageFlag.ValueSet.empty, None),
           context = Some(MultipartString("1")),
           message = MultipartString("2"),
           plural = MultipartString("3"),
@@ -188,64 +185,56 @@ class PoFileTest extends FlatSpec with Matchers {
   }
 
   it should "discard invalid declarations" in {
-    an [IllegalArgumentException] shouldBe thrownBy(t(""" pig "" """))
-    an [IllegalArgumentException] shouldBe thrownBy(t(""" msgid "" """))
-    an [IllegalArgumentException] shouldBe thrownBy(t(""" msgstr "" """))
-    an [IllegalArgumentException] shouldBe thrownBy(t(""" msgctxt "" """))
-    an [IllegalArgumentException] shouldBe thrownBy(t(""" msgstr[0] "" """))
+    an [LexerException] shouldBe thrownBy(t(""" pig "" """))
+    an [ParserException] shouldBe thrownBy(t(""" msgid "" """))
+    an [ParserException] shouldBe thrownBy(t(""" msgstr "" """))
+    an [ParserException] shouldBe thrownBy(t(""" msgctxt "" """))
+    an [ParserException] shouldBe thrownBy(t(""" msgstr[0] "" """))
 
-    an [IllegalArgumentException] shouldBe thrownBy {
+    an [ParserException] shouldBe thrownBy {
       t("""msgid "123"
           |#  Comment
         """.stripMargin)
     }
 
-    an [IllegalArgumentException] shouldBe thrownBy {
+    an [ParserException] shouldBe thrownBy {
       t("""msgctxt ""
           |msgid ""
         """.stripMargin)
     }
 
-    an [IllegalArgumentException] shouldBe thrownBy {
+    an [ParserException] shouldBe thrownBy {
       t("""msgid ""
           |msgstr ""
           |msgctxt ""
         """.stripMargin)
     }
 
-    an [IllegalArgumentException] shouldBe thrownBy {
+    an [ParserException] shouldBe thrownBy {
       t("""msgid ""
           |msgid_plural ""
           |msgstr ""
         """.stripMargin)
     }
 
-    an [IllegalArgumentException] shouldBe thrownBy {
+    an [ParserException] shouldBe thrownBy {
       t("""msgid ""
           |msgstr[0] ""
         """.stripMargin)
     }
 
-    an [IllegalArgumentException] shouldBe thrownBy {
+    an [ParserException] shouldBe thrownBy {
       t("""msgid ""
           |msgid_plural ""
           |msgstr[1] ""
         """.stripMargin)
     }
 
-    an [IllegalArgumentException] shouldBe thrownBy {
+    an [ParserException] shouldBe thrownBy {
       t("""msgid ""
           |msgid_plural ""
           |msgstr[0] ""
           |msgstr[2] ""
-        """.stripMargin)
-    }
-
-    an [IllegalArgumentException] shouldBe thrownBy {
-      t("""msgid ""
-          |msgid_plural ""
-          |msgstr[1] ""
-          |msgstr[0] ""
         """.stripMargin)
     }
   }
@@ -278,7 +267,8 @@ class PoFileTest extends FlatSpec with Matchers {
             comments = Seq("A sample string"),
             extractedComments = Seq("Should be translated"),
             locations = Seq( MessageLocation("test.scala", 10), MessageLocation("file.scala", 20) ),
-            flags = MessageFlag.ValueSet(MessageFlag.Fuzzy)
+            flags = MessageFlag.ValueSet(MessageFlag.Fuzzy),
+            tag = None
           ),
           context = None,
           message = MultipartString("Dog"),
@@ -290,13 +280,13 @@ class PoFileTest extends FlatSpec with Matchers {
           )
         ),
         Message.Singular(
-          header = MessageHeader(Nil, Nil, Seq( MessageLocation("x.scala", 25) ), MessageFlag.ValueSet.empty),
+          header = MessageHeader(Nil, Nil, Seq( MessageLocation("x.scala", 25) ), MessageFlag.ValueSet.empty, None),
           context = None,
           message = MultipartString("Hello, world!"),
           translation = MultipartString("Привет, мир!")
         ),
         Message.Singular(
-          header = MessageHeader(Nil, Nil, Nil, MessageFlag.ValueSet.empty),
+          header = MessageHeader(Nil, Nil, Nil, MessageFlag.ValueSet.empty, None),
           context = Some(MultipartString("testing")),
           message = MultipartString("lol"),
           translation = MultipartString("123")

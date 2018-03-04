@@ -1,0 +1,65 @@
+package ru.makkarpov.scalingua.pofile.parse;
+
+import java_cup.runtime.*;
+import ru.makkarpov.scalingua.pofile.*;
+import ru.makkarpov.scalingua.pofile.Message.*;
+import scala.Option;
+import scala.collection.Seq;
+import scala.collection.mutable.Builder;
+
+class PoParser;
+
+parser code {:
+    MutableHeader header = new MutableHeader();
+    MutableMultipartString mps = new MutableMultipartString();
+    MutablePlurals plurals = new MutablePlurals();
+    Builder<Message, Seq<Message>> messages;
+:};
+
+terminal            MSGID, MSGID_PLURAL, MSGSTR, MSGCTXT;
+terminal int        MSGSTR_PLURAL;
+terminal String     STRING;
+terminal Comment    COMMENT;
+
+nonterminal headerBuilder, stringBuilder, pluralsBuilder, entriesBuilder;
+nonterminal MessageHeader header;
+nonterminal MultipartString string;
+nonterminal Seq<MultipartString> plurals;
+nonterminal Option<MultipartString> context;
+nonterminal MultipartString msgid, msgidPlural, msgstr;
+nonterminal Message entry;
+nonterminal Seq<Message> entries;
+
+start with entries;
+
+context ::= MSGCTXT string:s {: RESULT = ParseUtils.some(s); :}
+          | {: RESULT = ParseUtils.none(); :};
+
+header ::= {: header.reset(); :} headerBuilder {: RESULT = header.result(); :};
+
+headerBuilder ::= headerBuilder COMMENT:c {: header.add(c, cxleft, cxright); :}
+                | {: /* epsilon */ :};
+
+string ::= {: mps.reset(); :} stringBuilder {: RESULT = mps.result(); :};
+
+stringBuilder ::= STRING:s {: mps.add(s); :}
+                | stringBuilder STRING:s {: mps.add(s); :};
+
+plurals ::= {: plurals.reset(); :} pluralsBuilder {: RESULT = plurals.result(); :};
+
+pluralsBuilder ::= MSGSTR_PLURAL:p string:s {: plurals.add(p, s, pxleft, sxright); :}
+                 | pluralsBuilder MSGSTR_PLURAL:p string:s {: plurals.add(p, s, pxleft, sxright); :};
+
+msgid ::= MSGID string:s {: RESULT = s; :};
+
+msgidPlural ::= MSGID_PLURAL string:s {: RESULT = s; :};
+
+msgstr ::= MSGSTR string:s {: RESULT = s; :};
+
+entry ::= header:h context:c msgid:i msgstr:s {: RESULT = new Singular(h, c, i, s); :}
+        | header:h context:c msgid:i msgidPlural:p plurals:s {: RESULT = new Plural(h, c, i, p, s); :};
+
+entries ::= {: messages = ParseUtils.newBuilder(); :} entriesBuilder header {: RESULT = messages.result(); :};
+
+entriesBuilder ::= entriesBuilder entry:e {: ParseUtils.add(messages, e); :}
+                 | {: /* epsilon */ :};

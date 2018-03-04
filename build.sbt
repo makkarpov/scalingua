@@ -1,7 +1,7 @@
 import sbt.Keys._
 
 name := "scalingua-root"
-version := "0.6.6"
+version := "0.6.7"
 crossPaths := true
 
 publishArtifact := false
@@ -11,7 +11,7 @@ enablePlugins(CrossPerProjectPlugin)
 
 val common = Seq(
   organization := "ru.makkarpov",
-  version <<= version in LocalRootProject,
+  version := (version in LocalRootProject).value,
 
   crossPaths := true,
   scalaVersion := "2.10.4",
@@ -61,6 +61,7 @@ lazy val core = project
   )
 
 lazy val scalingua = project
+  .enablePlugins(ParserGenerator)
   .settings(common:_*)
   .settings(
     name := "Scalingua",
@@ -68,7 +69,8 @@ lazy val scalingua = project
     description := "A simple gettext-like internationalization library for Scala",
 
     libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "com.github.vbmacher" % "java-cup-runtime" % "11b"
     ),
 
     libraryDependencies ++= {
