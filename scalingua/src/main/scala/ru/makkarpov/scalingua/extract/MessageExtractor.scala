@@ -22,13 +22,18 @@ object MessageExtractor {
   private var session = Option.empty[ExtractorSession]
 
   def setupSession(c: Context): ExtractorSession = {
-    val r = session match {
-      case None => new ExtractorSession(c.universe, ExtractorSettings.fromContext(c))
-      case Some(sess) if c.universe eq sess.global => sess
-      case Some(sess) =>
-        sess.finish()
-        new ExtractorSession(c.universe, ExtractorSettings.fromContext(c))
-    }
+    val r =
+      try {
+        session match {
+          case None => new ExtractorSession(c.universe, ExtractorSettings.fromContext(c))
+          case Some(sess) if c.universe eq sess.global => sess
+          case Some(sess) =>
+            sess.finish()
+            new ExtractorSession(c.universe, ExtractorSettings.fromContext(c))
+        }
+      } catch {
+        case e: TaggedParseException => c.abort(c.enclosingPosition, e.getMessage)
+      }
 
     session = Some(r)
     r

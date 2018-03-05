@@ -40,6 +40,7 @@ object ExtractorSession {
     var msgidPlural = Option.empty[MultipartString]
 
     var translations = Seq.empty[MultipartString]
+    var tag = Option.empty[String]
 
     def :=(msg: Message): Unit = {
       comments.clear()
@@ -48,6 +49,7 @@ object ExtractorSession {
       extractedComments ++= msg.header.extractedComments
       locations.clear()
       locations ++= msg.header.locations
+      tag = msg.header.tag.orElse(tag)
       flags = msg.header.flags
       context = msg.context
       msgid = msg.message
@@ -63,7 +65,7 @@ object ExtractorSession {
     }
 
     def toMsg: Message = {
-      val header = MessageHeader(comments, extractedComments, locations.toSeq, flags, None)
+      val header = MessageHeader(comments, extractedComments, locations.toSeq, flags, tag)
 
       msgidPlural match {
         case None => Message.Singular(header, context, msgid, translations.headOption.getOrElse(MultipartString.empty))
@@ -170,16 +172,23 @@ class ExtractorSession(val global: Universe, val setts: ExtractorSettings) {
   private val byFile = mutable.Map.empty[String, List[MutableMessage]]
   private val byMsgid = mutable.Map.empty[(String, Option[String]), MutableMessage]
 
-  if (setts.targetFile.exists() && setts.enable) {
-    for (m <- PoFile(setts.targetFile)) {
-      val mm = new MutableMessage
-      mm := m
-      for (loc <- mm.locations) {
-        val lst = byFile.getOrElse(loc.file, Nil)
-        byFile(loc.file) = mm :: lst
-      }
+  if (setts.enable) {
+    if (setts.targetFile.exists()) {
+      for (m <- PoFile(setts.targetFile) if !m.header.isTagged) {
+        val mm = new MutableMessage
+        mm := m
+        for (loc <- mm.locations) {
+          val lst = byFile.getOrElse(loc.file, Nil)
+          byFile(loc.file) = mm :: lst
+        }
 
-      byMsgid(mm.msgid.merge -> mm.context.map(_.merge)) = mm
+        byMsgid(mm.msgid.merge -> mm.context.map(_.merge)) = mm
+      }
+    }
+
+
+    for (t <- setts.taggedFile; m <- TaggedParser.parse(t)) {
+      message(m.msg, None) := m.toMessage
     }
   }
 
@@ -202,6 +211,18 @@ class ExtractorSession(val global: Universe, val setts: ExtractorSettings) {
         byFile.remove(f)
 
       case None => // all ok
+    }
+  }
+
+  private def message(msgid: String, msgctxt: Option[String]): MutableMessage = {
+    byMsgid.get(msgid -> msgctxt) match {
+      case Some(m) => m
+      case None =>
+        val r = new MutableMessage
+        r.msgid = MultipartString(msgid)
+        r.context = msgctxt.map(MultipartString.apply)
+        byMsgid.put(msgid -> msgctxt, r)
+        r
     }
   }
 
@@ -234,15 +255,7 @@ class ExtractorSession(val global: Universe, val setts: ExtractorSettings) {
 
     val loc = location(position)
 
-    val msg = byMsgid.get(msgid -> msgctx) match {
-      case Some(m) => m
-      case None =>
-        val r = new MutableMessage
-        r.msgid = MultipartString(msgid)
-        r.context = msgctx.map(MultipartString.apply)
-        byMsgid.put(msgid -> msgctx, r)
-        r
-    }
+    val msg = message(msgid, msgctx)
 
     msg.locations += loc
     if (msg.msgidPlural.isEmpty)

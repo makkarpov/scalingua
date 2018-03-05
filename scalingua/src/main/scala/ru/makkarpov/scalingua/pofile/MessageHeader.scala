@@ -18,5 +18,5 @@ package ru.makkarpov.scalingua.pofile
 
 case class MessageHeader(comments: Seq[String], extractedComments: Seq[String], locations: Seq[MessageLocation],
                          flags: MessageFlag.ValueSet, tag: Option[String]) {
-
+  def isTagged: Boolean = tag.isDefined
 }

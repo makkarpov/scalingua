@@ -42,20 +42,8 @@ object PoFile {
 
   val encoding                = StandardCharsets.UTF_8
 
-  val lineAnyHeader           = "^#.*$".r
-  val lineTrComment           = "^# \\s*(.*)$".r // translator comment
-  val lineExComment           = "^#\\.\\s*(.*)$".r // extracted comment
-  val lineOtherComment        = "^#[^:,.].*$".r // other unknown comment
-  val lineLocation            = "^#:\\s*(.+):(\\d+)$".r // location
-  val lineFlags               = "^#,\\s*(.+)$".r // flags like "#, fuzzy"
-
-  private val stringRegex     = "\"((?:\\\\(?:u[0-9A-Fa-f]{4}|[bfrtn\"'\\\\])|[^\\\\\"])*)\""
-  val lineLiteral             = s"^$stringRegex$$".r
-  val entryLiteral            = s"^([a-z_]+(?:\\[\\d+\\])?)\\s*$stringRegex$$".r
-
-  val entryMsgPlural          = "^msgstr\\[\\d*\\]$".r
-
-  private def headerComment(s: String) = s"#  !Generated: $s"
+  val GeneratedPrefix = "!Generated:"
+  private def headerComment(s: String) = s"#  $GeneratedPrefix $s"
 
   def apply(f: File): Seq[Message] = apply(new FileInputStream(f), f.getName)
 
@@ -85,10 +73,16 @@ object PoFile {
           output.println(s"#. $s")
 
         for (s <- m.header.locations)
-          output.println(s"#: ${s.file}:${s.line}")
+          if (s.line < 0)
+            output.println(s"#: ${s.file}")
+          else
+            output.println(s"#: ${s.file}:${s.line}")
 
         if (m.header.flags.nonEmpty)
           output.println(s"#, " + m.header.flags.map(_.toString).mkString(", "))
+
+        for (t <- m.header.tag)
+          output.println(s"#~ $t")
 
         for (c <- m.context)
           printEntry("msgctxt", c)

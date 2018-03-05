@@ -21,12 +21,21 @@ import java.nio.charset.StandardCharsets
 import java_cup.runtime.ComplexSymbolFactory.Location
 
 import ru.makkarpov.scalingua.LanguageId
+import ru.makkarpov.scalingua.extract.TaggedParser
 import ru.makkarpov.scalingua.plural.ParsedPlural
 import ru.makkarpov.scalingua.pofile.parse.{LexerException, ParserException}
 import ru.makkarpov.scalingua.pofile.{Message, MultipartString, PoFile}
 
 object PoCompiler {
-  val ScalaHashPrefix = "//# Hash: "
+  val EndOfFile     = 0
+  val Singular      = 1
+  val SingularCtx   = 2
+  val Plural        = 3
+  val PluralCtx     = 4
+  val SingularTag   = 5
+  val PluralTag     = 6
+
+  val EnglishTagsClass = "CompiledEnglishTags"
 
   def catchErrors[R](ctx: GenerationContext)(f: => R): R = {
     def report(left: Location, right: Location, msg: String, t: Throwable): Nothing = {
@@ -66,20 +75,8 @@ object PoCompiler {
 
   def doPackaging(ctx: GenerationContext): Unit = {
     // Should we regenerate file?
-    if (ctx.target.exists()) {
-      val storedHash = {
-        val is = new DataInputStream(new FileInputStream(ctx.target))
-        try is.readUTF()
-        catch {
-          case t: Throwable =>
-            t.printStackTrace()
-            ""
-        } finally is.close()
-      }
-
-      if (ctx.srcHash == storedHash)
-        return
-    }
+    if (ctx.checkBinaryHash)
+      return
 
     val dos = new DataOutputStream(new FileOutputStream(ctx.target))
     try {
@@ -95,53 +92,54 @@ object PoCompiler {
 
       catchErrors(ctx) {
         for (m <- PoFile(ctx.src)) m match {
-          case Message.Singular(_, ctxt, id, tr) =>
-            ctx.mergeContext(ctxt.map(_.merge)) match {
-              case None => dos.writeByte(1)
-              case Some(x) =>
-                dos.writeByte(2)
-                dos.writeUTF(x)
+          case Message.Singular(hdr, ctxt, id, tr) =>
+            hdr.tag match {
+              case Some(tag) =>
+                dos.writeByte(SingularTag)
+                dos.writeUTF(tag)
+
+              case None =>
+                ctx.mergeContext(ctxt.map(_.merge)) match {
+                  case None => dos.writeByte(Singular)
+                  case Some(x) =>
+                    dos.writeByte(SingularCtx)
+                    dos.writeUTF(x)
+                }
+
+                dos.writeUTF(id.merge)
             }
 
-            dos.writeUTF(id.merge)
             dos.writeUTF(tr.merge)
 
-          case Message.Plural(_, ctxt, id, _, trs) =>
-            ctx.mergeContext(ctxt.map(_.merge)) match {
-              case None => dos.writeByte(3)
-              case Some(x) =>
-                dos.writeByte(4)
-                dos.writeUTF(x)
+          case Message.Plural(hdr, ctxt, id, _, trs) =>
+            hdr.tag match {
+              case Some(tag) =>
+                dos.writeByte(PluralTag)
+                dos.writeUTF(tag)
+
+              case None =>
+                ctx.mergeContext(ctxt.map(_.merge)) match {
+                  case None => dos.writeByte(3)
+                  case Some(x) =>
+                    dos.writeByte(4)
+                    dos.writeUTF(x)
+                }
+
+                dos.writeUTF(id.merge)
             }
 
-            dos.writeUTF(id.merge)
             writePlurals(trs)
         }
       }
 
-      dos.writeByte(0)
+      dos.writeByte(EndOfFile)
     } finally dos.close()
   }
 
   def doCompiling(ctx: GenerationContext): Unit = {
     // Should we regenerate file?
-    if (ctx.target.exists()) {
-      val storedHash = {
-        val rd = new BufferedReader(new InputStreamReader(new FileInputStream(ctx.target), StandardCharsets.UTF_8))
-        try {
-          val l = rd.readLine()
-          if ((l ne null) && l.startsWith(ScalaHashPrefix)) l.substring(ScalaHashPrefix.length).trim
-          else ""
-        } catch {
-          case t: Throwable =>
-            t.printStackTrace()
-            ""
-        } finally rd.close()
-      }
-
-      if (storedHash == ctx.srcHash)
-        return
-    }
+    if (ctx.checkTextHash)
+      return
 
     val hdr = catchErrors(ctx) {
       val iter = PoFile(ctx.src)
@@ -166,10 +164,10 @@ object PoCompiler {
     val pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(ctx.target), StandardCharsets.UTF_8), false)
     try {
       pw.print(
-        s"""$ScalaHashPrefix${ctx.srcHash}
+        s"""${GenerationContext.ScalaHashPrefix}${ctx.srcHash}
            |${if (ctx.pkg.nonEmpty) s"package ${ctx.pkg}" else ""}
            |
-           |import ru.makkarpov.scalingua.{CompiledLanguage, PluralFunction}
+           |import ru.makkarpov.scalingua.{CompiledLanguage, PluralFunction, TaggedLanguage}
            |
            |object Language_${ctx.lang.language}_${ctx.lang.country}
            |extends CompiledLanguage with PluralFunction {
@@ -183,22 +181,76 @@ object PoCompiler {
            |
            |  val numPlurals = ${pf.numPlurals}
            |  def plural(arg: Long): Int = (${pf.expr.scalaExpression}).toInt
+           |  def taggedFallback: TaggedLanguage = ${if (ctx.hasTags) EnglishTagsClass else "TaggedLanguage.Identity"}
            |}
          """.stripMargin)
     } finally pw.close()
   }
 
-  def generateIndex(pkg: String, tgt: File, langs: Seq[LanguageId]): Unit = {
+  def generateIndex(pkg: String, tgt: File, langs: Seq[LanguageId], hasTags: Boolean): Unit = {
     val pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(tgt), StandardCharsets.UTF_8), false)
     try {
       pw.print(
         s"""${if (pkg.nonEmpty) s"package $pkg" else ""}
            |
-           |import ru.makkarpov.scalingua.Messages
+           |import ru.makkarpov.scalingua.{Messages, TaggedLanguage}
            |
-           |object Languages extends Messages(
+           |object Languages extends Messages(${if (hasTags) EnglishTagsClass else "TaggedLanguage.Identity"}${if (langs.nonEmpty) "," else ""}
            |  ${langs.map(l => s"Language_${l.language}_${l.country}").mkString(",\n  ")}
            |)
+         """.stripMargin
+      )
+    } finally pw.close()
+  }
+
+  def packageEnglishTags(ctx: GenerationContext): Unit = {
+    // Should we regenerate file?
+    if (ctx.checkBinaryHash)
+      return
+
+    val dos = new DataOutputStream(new FileOutputStream(ctx.target))
+    try {
+      dos.writeUTF(ctx.srcHash)
+
+      for (m <- TaggedParser.parse(ctx.src))
+        m.plural match {
+          case None =>
+            dos.writeByte(SingularTag)
+            dos.writeUTF(m.tag)
+            dos.writeUTF(m.msg)
+
+          case Some(plural) =>
+            dos.writeByte(PluralTag)
+            dos.writeUTF(m.tag)
+            dos.writeUTF(m.msg)
+            dos.writeUTF(plural)
+        }
+
+      dos.writeByte(EndOfFile)
+    } finally dos.close()
+  }
+
+  def compileEnglishTags(ctx: GenerationContext): Unit = {
+    // Should we regenerate file?
+    if (ctx.checkTextHash)
+      return
+
+    val pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(ctx.target), StandardCharsets.UTF_8), false)
+    try {
+      pw.print(
+        s"""${GenerationContext.ScalaHashPrefix}${ctx.srcHash}
+           |${if (ctx.pkg.nonEmpty) s"package ${ctx.pkg}" else ""}
+           |
+           |import ru.makkarpov.scalingua.CompiledLanguage.EnglishTags
+           |
+           |object $EnglishTagsClass extends EnglishTags {
+           |  initialize({
+           |    val str = getClass.getResourceAsStream("${ctx.filePrefix}compiled_english_tags.bin")
+           |    if (str eq null)
+           |      throw new NullPointerException("Compiled english tags not found!")
+           |    str
+           |  })
+           |}
          """.stripMargin
       )
     } finally pw.close()

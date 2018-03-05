@@ -27,5 +27,8 @@ case class MockEnglishLang(lid: String) extends Language {
   override def plural(msgctx: String, msgid: String, msgidPlural: String, n: Long): String =
     if (n == 1) msgid else msgidPlural
 
+  override def taggedSingular(tag: String): String = tag
+  override def taggedPlural(tag: String, n: Long): String = tag
+
   override def merge(other: Language): Language = throw new NotImplementedError("MockEnglishLang.merge")
 }

@@ -28,6 +28,9 @@ class Test extends FlatSpec with Matchers {
       override def plural(msgid: String, msgidPlural: String, n: Long): String = fail
       override def plural(msgctx: String, msgid: String, msgidPlural: String, n: Long): String = fail
       override def singular(msgid: String): String = fail
+      override def taggedSingular(tag: String): String = fail
+      override def taggedPlural(tag: String, n: Long): String = fail
+
       override def merge(other: Language): Language = fail
 
       def fail = throw new IllegalArgumentException("Called an unexpected method")

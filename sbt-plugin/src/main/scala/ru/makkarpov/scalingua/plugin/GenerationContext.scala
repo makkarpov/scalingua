@@ -16,11 +16,19 @@
 
 package ru.makkarpov.scalingua.plugin
 
+import java.io.{BufferedReader, DataInputStream, FileInputStream, InputStreamReader}
+import java.nio.charset.StandardCharsets
+
 import ru.makkarpov.scalingua.LanguageId
 import sbt._
 
-case class GenerationContext(pkg: String, implicitCtx: Option[String], lang: LanguageId, src: File, target: File,
-                             log: Logger)
+object GenerationContext {
+  val HashMarker = "## Hash: ## "
+  val ScalaHashPrefix = s"// $HashMarker"
+}
+
+case class GenerationContext(pkg: String, implicitCtx: Option[String], lang: LanguageId, hasTags: Boolean,
+                             src: File, target: File, log: Logger)
 {
   val srcHash = src.hashString
 
@@ -32,4 +40,39 @@ case class GenerationContext(pkg: String, implicitCtx: Option[String], lang: Lan
   }
 
   def filePrefix = "/" + pkg.replace('.', '/') + (if (pkg.nonEmpty) "/" else "")
+
+  def checkBinaryHash: Boolean = target.exists() && {
+    val storedHash = {
+      val is = new DataInputStream(new FileInputStream(target))
+      try is.readUTF()
+      catch {
+        case t: Throwable =>
+          t.printStackTrace()
+          ""
+      } finally is.close()
+    }
+
+    srcHash == storedHash
+  }
+
+  def checkTextHash: Boolean = target.exists() && {
+    import GenerationContext.HashMarker
+
+    val storedHash = {
+      val rd = new BufferedReader(new InputStreamReader(new FileInputStream(target), StandardCharsets.UTF_8))
+      try {
+        val l = rd.readLine()
+        if ((l ne null) && l.contains(HashMarker)) {
+          val idx = l.indexOf(HashMarker)
+          l.substring(idx + HashMarker.length)
+        } else ""
+      } catch {
+        case t: Throwable =>
+          t.printStackTrace()
+          ""
+      } finally rd.close()
+    }
+
+    srcHash == storedHash
+  }
 }

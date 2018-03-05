@@ -33,6 +33,8 @@ object Scalingua extends AutoPlugin {
 
     val includeImplicitContext = settingKey[Boolean]("Specifies whether to include implicit context in compiled messages")
 
+    val taggedFile = settingKey[Option[File]]("Tagged file to include in target .pot")
+
     // Internal task just to make `resourceGenerators` happy. Does not have any settings,
     // uses them from `compileLocales` task.
     val packageLocales = taskKey[Seq[File]]("Compile *.po files to packed binary files")
@@ -53,6 +55,7 @@ object Scalingua extends AutoPlugin {
     localePackage := "locales",
     implicitContext := None,
     includeImplicitContext := true,
+    taggedFile := None,
 
     includeFilter in compileLocales := "*.po",
     excludeFilter in compileLocales := HiddenFileFilter,
@@ -83,6 +86,12 @@ object Scalingua extends AutoPlugin {
     scalacOptions ++= {
       implicitContext.value match {
         case Some(s) => Seq("-Xmacro-settings:scalingua:implicitContext=" + s)
+        case None => Nil
+      }
+    },
+    scalacOptions ++= {
+      taggedFile.value match {
+        case Some(t) => Seq("-Xmacro-settings:scalingua:taggedFile=" + t.getCanonicalPath)
         case None => Nil
       }
     }
@@ -122,24 +131,26 @@ object Scalingua extends AutoPlugin {
     ret.result()
   }
 
-  def withGenContext(task: TaskKey[Seq[File]], fileFormat: String)(f: GenerationContext => Unit) = Def.task {
+  def withGenContext(task: TaskKey[Seq[File]], langFormat: String, tagFormat: String)
+                    (perLang: GenerationContext => Unit, englishTags: GenerationContext => Unit) = Def.task {
     val baseTgt = (target in task).value
     val pkg = (localePackage in task).value
     val implicitCtx =
       if ((includeImplicitContext in task).value) (implicitContext in task).value.filter(_.nonEmpty)
       else None
     val log = streams.value.log
+    val hasTags = (taggedFile in task).value.isDefined
 
     val langPattern = "^([a-z]{2})_([A-Z]{2})\\.po$".r
     val ret = Seq.newBuilder[File]
 
     for (src <- (sources in task).value) src.getName match {
       case langPattern(language, country) =>
-        val tgt = filePkg(baseTgt, pkg) / StringUtils.interpolate(fileFormat, "l" -> language, "c" -> country)
+        val tgt = filePkg(baseTgt, pkg) / StringUtils.interpolate(langFormat, "l" -> language, "c" -> country)
         createParent(tgt)
 
-        val genCtx = GenerationContext(pkg, implicitCtx, LanguageId(language, country), src, tgt, log)
-        try f(genCtx)
+        val genCtx = GenerationContext(pkg, implicitCtx, LanguageId(language, country), hasTags, src, tgt, log)
+        try perLang(genCtx)
         catch {
           case p: ParseFailedException =>
             throw p
@@ -153,13 +164,24 @@ object Scalingua extends AutoPlugin {
         throw new IllegalArgumentException(s"Illegal file name '${src.getName}', should be formatted like 'en_US.po' (${src.getCanonicalPath})")
     }
 
+    for (t <- (taggedFile in task).value) {
+      val tgt = filePkg(baseTgt, pkg) / tagFormat
+
+      val genCtx = GenerationContext(pkg, implicitCtx, LanguageId("xx", "XX"), hasTags, t, tgt, log)
+      englishTags(genCtx)
+      ret += tgt
+    }
+
     ret.result()
   }
 
-  def packageLocalesTask = withGenContext(packageLocales, "data_%(l)_%(c).bin")(PoCompiler.doPackaging)
+  def packageLocalesTask =
+    withGenContext(packageLocales, "data_%(l)_%(c).bin", "compiled_english_tags.bin")(
+      perLang = PoCompiler.doPackaging, englishTags = PoCompiler.packageEnglishTags)
 
   def compileLocalesTask = Def.task {
-    val r = withGenContext(compileLocales, "Language_%(l)_%(c).scala")(PoCompiler.doCompiling).value
+    val r = withGenContext(compileLocales, "Language_%(l)_%(c).scala", "CompiledEnglishTags.scala")(
+      perLang = PoCompiler.doCompiling, englishTags = PoCompiler.compileEnglishTags).value
 
     val idx = {
       val langs = collectLangs(compileLocales).value
@@ -168,7 +190,7 @@ object Scalingua extends AutoPlugin {
       val tgt = filePkg((target in compileLocales).value, pkg) / "Languages.scala"
       createParent(tgt)
 
-      PoCompiler.generateIndex(pkg, tgt, langs)
+      PoCompiler.generateIndex(pkg, tgt, langs, (taggedFile in compileLocales).value.isDefined)
 
       tgt
     }

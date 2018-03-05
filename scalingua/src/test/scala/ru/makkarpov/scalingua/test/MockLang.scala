@@ -34,4 +34,7 @@ class MockLang(s: String) extends Language {
   }
 
   override def merge(other: Language): Language = throw new NotImplementedError("MockLang.merge")
+
+  override def taggedSingular(tag: String): String = parts("ts", tag)
+  override def taggedPlural(tag: String, n: Long): String = parts("tp", tag, n)
 }

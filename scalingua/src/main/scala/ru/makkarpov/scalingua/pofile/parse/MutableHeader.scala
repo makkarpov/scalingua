@@ -2,7 +2,7 @@ package ru.makkarpov.scalingua.pofile.parse
 
 import java_cup.runtime.ComplexSymbolFactory.Location
 
-import ru.makkarpov.scalingua.pofile.{MessageFlag, MessageHeader, MessageLocation}
+import ru.makkarpov.scalingua.pofile.{MessageFlag, MessageHeader, MessageLocation, PoFile}
 
 import scala.collection.mutable
 
@@ -17,7 +17,10 @@ class MutableHeader {
   private var tag: Option[String] = _
 
   private def parseComment(cmt: Comment, left: Location, right: Location): Unit = cmt.commentTag match {
-    case ' ' => comments += cmt.comment.trim
+    case ' ' =>
+      val str = cmt.comment.trim
+      if (!str.startsWith(PoFile.GeneratedPrefix))
+        comments += str
     case '.' => extractedComments += cmt.comment.trim
     case ':' =>
       // It seems that GNU .po utilities can combine locations in a single line:

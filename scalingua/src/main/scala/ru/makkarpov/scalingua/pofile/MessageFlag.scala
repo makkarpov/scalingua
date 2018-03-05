@@ -18,4 +18,6 @@ package ru.makkarpov.scalingua.pofile
 
 object MessageFlag extends Enumeration {
   val Fuzzy = Value("fuzzy")
+
+  val empty: ValueSet = ValueSet()
 }

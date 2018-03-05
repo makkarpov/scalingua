@@ -68,6 +68,20 @@ trait I18n {
   def lpc(ctx: String, msg: String, msgPlural: String, n: Long, args: (String, Any)*)
         (implicit outputFormat: OutputFormat[String]): LString =
     macro Macros.lazyPluralCtx[String]
+
+  // Tagged:
+
+  def tag(tag: String, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
+    macro Macros.singularTag[String]
+
+  def ltag(tag: String, args: (String, Any)*)(implicit outputFormat: OutputFormat[String]): LValue[String] =
+    macro Macros.lazySingularTag[String]
+
+  def ptag(tag: String, n: Long, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[String]): String =
+    macro Macros.pluralTag[String]
+
+  def lptag(tag: String, n: Long, args: (String, Any)*)(implicit outputFormat: OutputFormat[String]): LValue[String] =
+    macro Macros.lazyPluralTag[String]
 }
 
 object I18n extends I18n {

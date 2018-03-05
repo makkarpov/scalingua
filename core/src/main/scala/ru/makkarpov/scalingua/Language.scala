@@ -26,7 +26,7 @@ object Language {
   /**
     * A fallback English language that always returns the same message strings.
     */
-  val English: Language = new Language {
+  class English(tags: TaggedLanguage) extends Language {
     override def id = LanguageId("en", "US")
 
     override def singular(msgid: String): String = msgid
@@ -35,14 +35,19 @@ object Language {
     override def plural(msgctx: String, msgid: String, msgidPlural: String, n: Long): String =
       if (n != 1) msgidPlural else msgid
 
+    override def taggedSingular(tag: String): String = tags.taggedSingular(tag)
+    override def taggedPlural(tag: String, n: Long): String = tags.taggedPlural(tag, n)
+
     override def merge(other: Language): Language = other
   }
+
+  val English = new English(TaggedLanguage.Identity)
 }
 
 /**
   * Base trait for objects reprensenting languages.
   */
-trait Language {
+trait Language extends TaggedLanguage {
   /**
     * A exact (with country part) ID of this language.
     */

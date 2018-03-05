@@ -50,11 +50,11 @@ object Messages {
 }
 
 /**
-  * Class representing a collection of language.
+  * Class representing a collection of languages.
   *
   * @param langs Available languages
   */
-class Messages(langs: Language*) {
+class Messages(tags: TaggedLanguage, langs: Language*) {
   private val (byLang, byCountry) = {
     val lng = Map.newBuilder[String, Language]
     val cntr = Map.newBuilder[LanguageId, Language]
@@ -72,6 +72,8 @@ class Messages(langs: Language*) {
     (lng.result(), cntr.result())
   }
 
+  private val fallback = new Language.English(tags)
+
   /**
     * Retrieves a language from message set by it's ID. The languages are tried in this order:
     *  1) Exact language, e.g. `ru_RU`
@@ -81,7 +83,7 @@ class Messages(langs: Language*) {
     * @param lang Language ID to fetch
     * @return Fetched language if available, or `Language.English` otherwise.
     */
-  def apply(lang: LanguageId): Language = byCountry.getOrElse(lang, byLang.getOrElse(lang.language, Language.English))
+  def apply(lang: LanguageId): Language = byCountry.getOrElse(lang, byLang.getOrElse(lang.language, fallback))
 
   /**
     * Test whether this messages contains specified language, either exact (`ru_RU`) or fuzzy (`ru_**`).
@@ -117,6 +119,6 @@ class Messages(langs: Language*) {
         else other(langId))
     }
 
-    new Messages(newLanguages.result():_*)
+    new Messages(tags, newLanguages.result():_*)
   }
 }

@@ -1,7 +1,7 @@
 import sbt.Keys._
 
 name := "scalingua-root"
-version := "0.6.7"
+version := "0.7"
 crossPaths := true
 
 publishArtifact := false
@@ -70,7 +70,8 @@ lazy val scalingua = project
 
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "com.github.vbmacher" % "java-cup-runtime" % "11b"
+      "com.github.vbmacher" % "java-cup-runtime" % "11b",
+      "com.grack" % "nanojson" % "1.2"
     ),
 
     libraryDependencies ++= {

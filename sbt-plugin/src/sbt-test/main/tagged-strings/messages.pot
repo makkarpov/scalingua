@@ -1,0 +1,19 @@
+
+#: src/test/scala/Test.scala:12
+#: src/test/scala/Test.scala:21
+msgid "Test"
+msgstr ""
+
+#  cmt
+#: tagged-messages.json
+#~ test.plural.key
+msgid "singular form"
+msgid_plural "plural forms"
+msgstr[0] ""
+msgstr[1] ""
+
+#: tagged-messages.json
+#~ test.key
+msgid "test message"
+msgstr ""
+

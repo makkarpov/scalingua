@@ -15,7 +15,7 @@ object MergedLanguage {
   }
 }
 
-class MergedLanguage(val id: LanguageId, val data: MessageData, plural: PluralFunction) extends Language {
+class MergedLanguage(val id: LanguageId, val data: MessageData, plural: PluralFunction, tags: TaggedLanguage) extends Language {
   /**
     * Resolve singular form of message without a context.
     *
@@ -62,6 +62,23 @@ class MergedLanguage(val id: LanguageId, val data: MessageData, plural: PluralFu
     }
 
   /**
+    * Returns singular string resolved by tag
+    *
+    * @param tag String tag
+    * @return Resolved string
+    */
+  override def taggedSingular(tag: String): String = tags.taggedSingular(tag)
+
+  /**
+    * Returns plural string resolved by tag with respect to quantity
+    *
+    * @param tag String tag
+    * @param n   Quantity
+    * @return Resolved string
+    */
+  override def taggedPlural(tag: String, n: Long): String = tags.taggedPlural(tag, n)
+
+  /**
     * Merges this language with specified `other`. Conflicting messages will be resolved
     * using `this` language. Plural function will be used from `this` language.
     *
@@ -69,8 +86,8 @@ class MergedLanguage(val id: LanguageId, val data: MessageData, plural: PluralFu
     * @return Merged language
     */
   override def merge(other: Language): Language = other match {
-    case ml: MergedLanguage => new MergedLanguage(id, data.merge(ml.data), plural)
-    case cc: CompiledLanguage => new MergedLanguage(id, data.merge(cc.messageData), plural)
+    case ml: MergedLanguage => new MergedLanguage(id, data.merge(ml.data), plural, this)
+    case cc: CompiledLanguage => new MergedLanguage(id, data.merge(cc.messageData), plural, cc)
     case Language.English => other
     case _ => throw new NotImplementedError("Merge is supported only for MergedLanguage and CompiledLanguage")
   }

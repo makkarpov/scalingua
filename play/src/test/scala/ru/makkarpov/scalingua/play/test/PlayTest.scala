@@ -17,7 +17,7 @@
 package ru.makkarpov.scalingua.play.test
 
 import org.scalatest.{FlatSpec, Matchers}
-import ru.makkarpov.scalingua.{Language, Messages}
+import ru.makkarpov.scalingua.{Language, Messages, TaggedLanguage}
 import ru.makkarpov.scalingua.play.I18n._
 
 class PlayTest extends FlatSpec with Matchers {
@@ -30,6 +30,7 @@ class PlayTest extends FlatSpec with Matchers {
 
   it should "handle 'Accept' header" in {
     implicit val messages = new Messages(
+      TaggedLanguage.Identity,
       MockEnglishLang("aa-AA"),
       MockEnglishLang("aa-AX"),
       MockEnglishLang("bb-BB"),

@@ -24,6 +24,8 @@ object MessageLocation {
         case x => x
       }
   }
+
+  def apply(file: String): MessageLocation = MessageLocation(file, -1)
 }
 
 case class MessageLocation(file: String, line: Int)

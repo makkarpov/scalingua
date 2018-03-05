@@ -22,7 +22,7 @@ import ru.makkarpov.scalingua.plural.Suffix
 import ru.makkarpov.scalingua.InsertableIterator._
 
 object Macros {
-  // All macros variants: (lazy, eager) x (singular, plural) x (interpolation, ctx, non ctx)), 12 total
+  // All macros variants: (lazy, eager) x (singular, plural) x (interpolation, ctx, non ctx, tagged), 16 total
 
   // Interpolators:
 
@@ -110,6 +110,29 @@ object Macros {
     (outputFormat: c.Expr[OutputFormat[T]]): c.Expr[LValue[T]] =
     c.Expr[LValue[T]](generate[T](c)(Some(ctx.tree), msg.tree, Some((msgPlural.tree, n.tree, true)), args.map(_.tree))
                                     (None, outputFormat.tree))
+
+  // Tagged: just forwards all calls to supplied Language.
+  // These should be implemented as macros since otherwise they would leak a reference to I18n in compiled code.
+
+  def singularTag[T: c.WeakTypeTag](c: Context)
+    (tag: c.Expr[String], args: c.Expr[(String, Any)]*)
+    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+    c.Expr[T](tagGenerate(c)(tag.tree, None, args.map(_.tree))(Some(lang.tree), outputFormat.tree))
+
+  def lazySingularTag[T: c.WeakTypeTag](c: Context)
+    (tag: c.Expr[String], args: c.Expr[(String, Any)]*)
+    (outputFormat: c.Expr[OutputFormat[T]]): c.Expr[LValue[T]] =
+    c.Expr[LValue[T]](tagGenerate(c)(tag.tree, None, args.map(_.tree))(None, outputFormat.tree))
+
+  def pluralTag[T: c.WeakTypeTag](c: Context)
+    (tag: c.Expr[String], n: c.Expr[Long], args: c.Expr[(String, Any)]*)
+    (lang: c.Expr[Language], outputFormat: c.Expr[OutputFormat[T]]): c.Expr[T] =
+    c.Expr[T](tagGenerate(c)(tag.tree, Some(n.tree), args.map(_.tree))(Some(lang.tree), outputFormat.tree))
+
+  def lazyPluralTag[T: c.WeakTypeTag](c: Context)
+   (tag: c.Expr[String], n: c.Expr[Long], args: c.Expr[(String, Any)]*)
+   (outputFormat: c.Expr[OutputFormat[T]]): c.Expr[LValue[T]] =
+    c.Expr[LValue[T]](tagGenerate(c)(tag.tree, Some(n.tree), args.map(_.tree))(None, outputFormat.tree))
 
   // Macro internals:
 
@@ -333,6 +356,34 @@ object Macros {
             ($name: _root_.ru.makkarpov.scalingua.Language) => ${translate(q"$name")}
           )
         """
+    }
+  }
+
+  private def tagGenerate[T: c.WeakTypeTag](c: Context)
+    (tagTree: c.Tree, pluralTree: Option[c.Tree], argsTree: Seq[c.Tree])
+    (lang: Option[c.Tree], outputFormat: c.Tree): c.Tree =
+  {
+    import c.universe._
+
+    def translate(lng: c.Tree): c.Tree = {
+      val str = pluralTree match {
+        case None => q"$lng.taggedSingular($tagTree)"
+        case Some(n) => q"$lng.taggedPlural($tagTree, $n)"
+      }
+
+      if (argsTree.isEmpty) q"$outputFormat.convert($str)"
+      else q"_root_.ru.makkarpov.scalingua.StringUtils.interpolate[${weakTypeOf[T]}]($str, ..$argsTree)"
+    }
+
+    lang match {
+      case Some(lng) => translate(lng)
+      case None =>
+        val name = termName(c)("lng")
+        q"""
+           new _root_.ru.makkarpov.scalingua.LValue(
+             ($name: _root_.ru.makkarpov.scalingua.Language) => ${translate(q"$name")}
+           )
+         """
     }
   }
 
