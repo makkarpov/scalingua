@@ -35,6 +35,8 @@ object Scalingua extends AutoPlugin {
 
     val taggedFile = settingKey[Option[File]]("Tagged file to include in target .pot")
 
+    val escapeUnicode = settingKey[Boolean]("Whether to escape unicode characters or not")
+
     // Internal task just to make `resourceGenerators` happy. Does not have any settings,
     // uses them from `compileLocales` task.
     val packageLocales = taskKey[Seq[File]]("Compile *.po files to packed binary files")
@@ -56,6 +58,7 @@ object Scalingua extends AutoPlugin {
     implicitContext := None,
     includeImplicitContext := true,
     taggedFile := None,
+    escapeUnicode := true,
 
     includeFilter in compileLocales := "*.po",
     excludeFilter in compileLocales := HiddenFileFilter,
@@ -83,6 +86,7 @@ object Scalingua extends AutoPlugin {
 
     scalacOptions += "-Xmacro-settings:scalingua:target=" + templateTarget.value.getCanonicalPath,
     scalacOptions += "-Xmacro-settings:scalingua:baseDir=" + longestCommonPrefix(sourceDirectories.value),
+    scalacOptions += "-Xmacro-settings:scalingua:escapeUnicode=" + escapeUnicode.value,
     scalacOptions ++= {
       implicitContext.value match {
         case Some(s) => Seq("-Xmacro-settings:scalingua:implicitContext=" + s)

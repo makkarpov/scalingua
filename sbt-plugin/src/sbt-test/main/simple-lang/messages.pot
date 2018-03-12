@@ -39,3 +39,11 @@ msgid_plural "Look, I have %(x) percents: %%!"
 msgstr[0] ""
 msgstr[1] ""
 
+#: src/test/scala/Test.scala:68
+msgid "Привет, мир!"
+msgstr ""
+
+#: src/test/scala/Test.scala:69
+msgid "Weird\u2019quotes"
+msgstr ""
+

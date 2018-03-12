@@ -243,7 +243,7 @@ class ExtractorSession(val global: Universe, val setts: ExtractorSettings) {
       }
 
       val msgs = byMsgid.valuesIterator.filter(_.locations.nonEmpty).toSeq.sortWith(cmp).map(_.toMsg)
-      PoFile(setts.targetFile) = msgs.iterator
+      PoFile.update(setts.targetFile, msgs.iterator, setts.escapeUnicode)
     }
   }
 

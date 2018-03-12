@@ -52,7 +52,7 @@ object PoFile {
     parser.parse().value.asInstanceOf[Seq[Message]]
   }
 
-  def update(f: File, messages: Iterator[Message]): Unit = {
+  def update(f: File, messages: Iterator[Message], escapeUnicode: Boolean = true): Unit = {
     val output = new PrintWriter(new OutputStreamWriter(new FileOutputStream(f), encoding), false)
     try {
       output.println(headerComment(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())))
@@ -62,7 +62,7 @@ object PoFile {
         output.print(s + " ")
 
         if (m.parts.isEmpty) output.println("\"\"")
-        else for (p <- m.parts) output.println("\"" + StringUtils.escape(p) + "\"")
+        else for (p <- m.parts) output.println("\"" + StringUtils.escape(p, escapeUnicode) + "\"")
       }
 
       for (m <- messages) {

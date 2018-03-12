@@ -1,0 +1,13 @@
+
+#: src/test/scala/Test.scala:11
+msgid "Hello, world!"
+msgstr ""
+
+#: src/test/scala/Test.scala:12
+msgid "Привет, мир!"
+msgstr ""
+
+#: src/test/scala/Test.scala:13
+msgid "Weird’quotes"
+msgstr ""
+

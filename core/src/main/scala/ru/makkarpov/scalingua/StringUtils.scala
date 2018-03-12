@@ -95,7 +95,7 @@ object StringUtils {
     * @param s Raw string to escape
     * @return Escaped version of `s`
     */
-  def escape(s: String): String = {
+  def escape(s: String, escapeUnicode: Boolean = true): String = {
     val ret = new StringBuilder
     ret.sizeHint(s.length)
 
@@ -109,7 +109,7 @@ object StringUtils {
       case '\f' => ret ++= "\\f"
       case '\\' => ret ++= "\\\\"
       case '\"' => ret ++= "\\\""
-      case x if canPrintLiterally(x) => ret += x
+      case x if !escapeUnicode || canPrintLiterally(x) => ret += x
       case x => ret ++= "\\u%04X" format x.toInt
     }
 

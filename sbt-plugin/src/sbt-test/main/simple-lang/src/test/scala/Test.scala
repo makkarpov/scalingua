@@ -62,4 +62,10 @@ class Test extends FlatSpec with Matchers {
       t"Test: $x% qweqwe"
     """ shouldNot typeCheck
   }
+
+  it should "escape unicode literals" in {
+    implicit val langId = LanguageId("en-US")
+    t"Привет, мир!" shouldBe "Привет, мир!"
+    t"Weird’quotes" shouldBe "Weird’quotes"
+  }
 }
