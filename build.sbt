@@ -1,7 +1,7 @@
 import sbt.Keys._
 
 name := "scalingua-root"
-version := "0.7.1"
+version := "0.7.2"
 crossPaths := true
 
 publishArtifact := false
@@ -61,7 +61,7 @@ lazy val core = project
   )
 
 lazy val scalingua = project
-  .enablePlugins(ParserGenerator)
+  .enablePlugins(ParserGenerator, AssemblyPlugin)
   .settings(common:_*)
   .settings(
     name := "Scalingua",
@@ -82,9 +82,30 @@ lazy val scalingua = project
         )
         case _ => Nil
       }
+    },
+
+    assemblyShadeRules in assembly := Seq(
+      ShadeRule.rename("java_cup.runtime.**" -> "ru.makkarpov.scalingua.pofile.shaded_javacup.@1").inAll
+    ),
+
+    // include only CUP:
+    assemblyExcludedJars in assembly := (fullClasspath in assembly).value.filterNot { f =>
+      f.data.getName.contains("java-cup-runtime")
     }
   )
   .dependsOn(core)
+
+lazy val scalingua_shadedCup = project.in(file("target/shaded-cup"))
+    .settings(common:_*)
+    .settings(
+      name := "Scalingua shaded",
+      normalizedName := "scalingua-shaded",
+      description := "Scalingua with shaded CUP runtime to prevent conflicts",
+
+      packageBin in Compile := (assembly in (scalingua, Compile)).value,
+      libraryDependencies := (libraryDependencies in scalingua).value.filterNot(_.name.contains("java-cup"))
+    )
+    .dependsOn(scalingua.dependencies:_*)
 
 lazy val play = project
   .settings(common:_*)
