@@ -23,7 +23,7 @@ object ParserGenerator extends AutoPlugin {
     sources in task :=
       Defaults.collectFiles(sourceDirectories in task, includeFilter in task, excludeFilter in task).value,
 
-    target in task := target.value / dir,
+    target in task := crossTarget.value / dir,
 
     sourceGenerators += task.taskValue,
     managedSourceDirectories += (target in task).value
@@ -49,10 +49,10 @@ object ParserGenerator extends AutoPlugin {
     val srcFiles = src.value
     val targetDir = tgt.value
 
-    if (targetDir.exists()) IO.delete(targetDir)
-
     if (srcFiles.isEmpty) Nil
-    else {
+    else synchronized { // some weird threading issues, i'm too lazy to debug them.
+      if (targetDir.exists()) IO.delete(targetDir)
+
       IO.createDirectory(targetDir)
       srcFiles.foreach(f(_, targetDir))
       IO.listFiles(targetDir)
