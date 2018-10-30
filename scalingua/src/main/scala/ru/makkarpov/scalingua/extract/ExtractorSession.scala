@@ -16,7 +16,7 @@
 
 package ru.makkarpov.scalingua.extract
 
-import java.io.IOException
+import java.io.{File, IOException}
 
 import ru.makkarpov.scalingua.Compat.Context
 import ru.makkarpov.scalingua.extract.ExtractorSession.MutableMessage
@@ -169,7 +169,7 @@ class ExtractorSession(val global: Universe, val setts: ExtractorSettings) {
       })
   }
 
-  private val byFile = mutable.Map.empty[String, List[MutableMessage]]
+  private val byFile = mutable.Map.empty[File, List[MutableMessage]]
   private val byMsgid = mutable.Map.empty[(String, Option[String]), MutableMessage]
 
   if (setts.enable) {
@@ -192,18 +192,16 @@ class ExtractorSession(val global: Universe, val setts: ExtractorSettings) {
     }
   }
 
-  private def relative(pos: Position): (String, Int) = {
-    val srcFile = pos.source.path
-    (if (srcFile.startsWith(setts.srcBaseDir)) srcFile.substring(setts.srcBaseDir.length) else srcFile) -> pos.line
-  }
-
   private def location(pos: Position): MessageLocation = {
-    val (f, l) = relative(pos)
-    MessageLocation(f, l)
+    val srcFile = pos.source
+    val f = Option(srcFile.file.file).collect {
+      case f if f.toPath.startsWith(setts.srcBaseDir.toPath) => setts.srcBaseDir.toPath.relativize(f.toPath).toFile
+    }.getOrElse(new File(srcFile.path))
+    MessageLocation(f, pos.line)
   }
 
   private def flushFile(pos: Position): Unit = {
-    val (f, _) = relative(pos)
+    val f = location(pos).file
 
     byFile.get(f) match {
       case Some(xs) =>
@@ -235,15 +233,8 @@ class ExtractorSession(val global: Universe, val setts: ExtractorSettings) {
       if ((parent ne null) && !parent.exists() && !parent.mkdirs())
         throw new IOException(s"Cannot create directory ${parent.getCanonicalPath}!")
 
-      val cmp = (a: MutableMessage, b: MutableMessage) => {
-        val aLoc = a.locations.min
-        val bLoc = b.locations.min
-
-        MessageLocation.LocationOrdering.compare(aLoc, bLoc) < 0
-      }
-
-      val msgs = byMsgid.valuesIterator.filter(_.locations.nonEmpty).toSeq.sortWith(cmp).map(_.toMsg)
-      PoFile.update(setts.targetFile, msgs.iterator, setts.escapeUnicode)
+      val msgs = byMsgid.valuesIterator.filter(_.locations.nonEmpty).toSeq.sortBy(_.locations.min).map(_.toMsg)
+      PoFile.update(setts.targetFile, msgs, setts.escapeUnicode)
     }
   }
 

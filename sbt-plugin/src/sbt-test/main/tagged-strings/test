@@ -1,3 +1,3 @@
 > test
 $ exec chmod +x verify-pot.sh
-$ exec ./verify-pot.sh
+$ exec bash ./verify-pot.sh

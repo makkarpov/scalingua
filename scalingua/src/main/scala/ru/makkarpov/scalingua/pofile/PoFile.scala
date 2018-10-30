@@ -52,8 +52,8 @@ object PoFile {
     parser.parse().value.asInstanceOf[Seq[Message]]
   }
 
-  def update(f: File, messages: Iterator[Message], escapeUnicode: Boolean = true): Unit = {
-    val output = new PrintWriter(new OutputStreamWriter(new FileOutputStream(f), encoding), false)
+  def update(f: File, messages: Seq[Message], escapeUnicode: Boolean = true): Unit = {
+    val output = new NewLinePrintWriter(new OutputStreamWriter(new FileOutputStream(f), encoding), false)
     try {
       output.println(headerComment(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())))
       output.println()
@@ -72,11 +72,11 @@ object PoFile {
         for (s <- m.header.extractedComments)
           output.println(s"#. $s")
 
-        for (s <- m.header.locations)
+        for (s <- m.header.locations.sorted)
           if (s.line < 0)
-            output.println(s"#: ${s.file}")
+            output.println(s"#: ${s.fileString}")
           else
-            output.println(s"#: ${s.file}:${s.line}")
+            output.println(s"#: ${s.fileString}:${s.line}")
 
         if (m.header.flags.nonEmpty)
           output.println(s"#, " + m.header.flags.map(_.toString).mkString(", "))

@@ -16,16 +16,23 @@
 
 package ru.makkarpov.scalingua.pofile
 
+import java.io.File
+
 object MessageLocation {
   implicit case object LocationOrdering extends Ordering[MessageLocation] {
-    override def compare(x: MessageLocation, y: MessageLocation): Int =
-      x.file.compareToIgnoreCase(y.file) match {
+    override def compare(x: MessageLocation, y: MessageLocation): Int = {
+      //fs independent comparison
+      val r = x.file.toString.compareTo(y.file.toString) match {
         case 0 => x.line.compare(y.line)
         case x => x
       }
+      r
+    }
   }
 
-  def apply(file: String): MessageLocation = MessageLocation(file, -1)
+  def apply(file: String): MessageLocation = MessageLocation(new File(file), -1)
 }
 
-case class MessageLocation(file: String, line: Int)
+case class MessageLocation(file: File, line: Int) {
+  def fileString: String = file.toString.replaceAllLiterally("""\""", "/")
+}

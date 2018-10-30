@@ -18,13 +18,13 @@ package ru.makkarpov.scalingua.plugin
 
 import java.io._
 import java.nio.charset.StandardCharsets
-import java_cup.runtime.ComplexSymbolFactory.Location
 
+import java_cup.runtime.ComplexSymbolFactory.Location
 import ru.makkarpov.scalingua.LanguageId
 import ru.makkarpov.scalingua.extract.TaggedParser
 import ru.makkarpov.scalingua.plural.ParsedPlural
 import ru.makkarpov.scalingua.pofile.parse.{LexerException, ParserException}
-import ru.makkarpov.scalingua.pofile.{Message, MultipartString, PoFile}
+import ru.makkarpov.scalingua.pofile.{Message, MultipartString, NewLinePrintWriter, PoFile}
 
 object PoCompiler {
   val EndOfFile     = 0
@@ -161,7 +161,7 @@ object PoCompiler {
       case Some(x) => ParsedPlural.fromHeader(x)
     }
 
-    val pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(ctx.target), StandardCharsets.UTF_8), false)
+    val pw = new NewLinePrintWriter(new OutputStreamWriter(new FileOutputStream(ctx.target), StandardCharsets.UTF_8), false)
     try {
       pw.print(
         s"""${GenerationContext.ScalaHashPrefix}${ctx.srcHash}
@@ -188,7 +188,7 @@ object PoCompiler {
   }
 
   def generateIndex(pkg: String, tgt: File, langs: Seq[LanguageId], hasTags: Boolean): Unit = {
-    val pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(tgt), StandardCharsets.UTF_8), false)
+    val pw = new NewLinePrintWriter(new OutputStreamWriter(new FileOutputStream(tgt), StandardCharsets.UTF_8), false)
     try {
       pw.print(
         s"""${if (pkg.nonEmpty) s"package $pkg" else ""}
@@ -235,7 +235,7 @@ object PoCompiler {
     if (ctx.checkTextHash)
       return
 
-    val pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(ctx.target), StandardCharsets.UTF_8), false)
+    val pw = new NewLinePrintWriter(new OutputStreamWriter(new FileOutputStream(ctx.target), StandardCharsets.UTF_8), false)
     try {
       pw.print(
         s"""${GenerationContext.ScalaHashPrefix}${ctx.srcHash}
