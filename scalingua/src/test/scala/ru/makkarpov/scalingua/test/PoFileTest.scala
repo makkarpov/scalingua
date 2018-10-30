@@ -241,7 +241,7 @@ class PoFileTest extends FlatSpec with Matchers {
 
   it should "parse complex examples" in {
     t(
-      """#: x\test.scala:10
+      """#: x/test.scala:10
         |#: y/file.scala:20
         |#  A sample string
         |#. Should be translated
