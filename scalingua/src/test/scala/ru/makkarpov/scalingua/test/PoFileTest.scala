@@ -16,7 +16,7 @@
 
 package ru.makkarpov.scalingua.test
 
-import java.io.ByteArrayInputStream
+import java.io.{ByteArrayInputStream, File}
 import java.nio.charset.StandardCharsets
 
 import org.scalatest.{FlatSpec, Matchers}
@@ -67,7 +67,7 @@ class PoFileTest extends FlatSpec with Matchers {
 
   it should "parse singular forms" in {
     t("""#  comment
-        |#: file.scala:20
+        |#: x/file.scala:20
         |#, fuzzy
         |#. tr comment
         |msgid "test"
@@ -82,7 +82,7 @@ class PoFileTest extends FlatSpec with Matchers {
           header = MessageHeader(
             Seq("comment"),
             Seq("tr comment"),
-            Seq(MessageLocation("file.scala", 20)),
+            Seq(MessageLocation(new File("x/file.scala"), 20)),
             MessageFlag.ValueSet(MessageFlag.Fuzzy),
             None
           ),
@@ -241,8 +241,8 @@ class PoFileTest extends FlatSpec with Matchers {
 
   it should "parse complex examples" in {
     t(
-      """#: test.scala:10
-        |#: file.scala:20
+      """#: x/test.scala:10
+        |#: y/file.scala:20
         |#  A sample string
         |#. Should be translated
         |#, fuzzy
@@ -266,7 +266,7 @@ class PoFileTest extends FlatSpec with Matchers {
           header = MessageHeader(
             comments = Seq("A sample string"),
             extractedComments = Seq("Should be translated"),
-            locations = Seq( MessageLocation("test.scala", 10), MessageLocation("file.scala", 20) ),
+            locations = Seq( MessageLocation(new File("x/test.scala"), 10), MessageLocation(new File("y/file.scala"), 20) ),
             flags = MessageFlag.ValueSet(MessageFlag.Fuzzy),
             tag = None
           ),
@@ -280,7 +280,7 @@ class PoFileTest extends FlatSpec with Matchers {
           )
         ),
         Message.Singular(
-          header = MessageHeader(Nil, Nil, Seq( MessageLocation("x.scala", 25) ), MessageFlag.ValueSet.empty, None),
+          header = MessageHeader(Nil, Nil, Seq( MessageLocation(new File("x.scala"), 25) ), MessageFlag.ValueSet.empty, None),
           context = None,
           message = MultipartString("Hello, world!"),
           translation = MultipartString("Привет, мир!")

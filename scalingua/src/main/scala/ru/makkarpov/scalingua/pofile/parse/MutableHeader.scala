@@ -1,7 +1,8 @@
 package ru.makkarpov.scalingua.pofile.parse
 
-import java_cup.runtime.ComplexSymbolFactory.Location
+import java.io.File
 
+import java_cup.runtime.ComplexSymbolFactory.Location
 import ru.makkarpov.scalingua.pofile.{MessageFlag, MessageHeader, MessageLocation, PoFile}
 
 import scala.collection.mutable
@@ -37,9 +38,9 @@ class MutableHeader {
             case _: NumberFormatException => throw ParserException(left, right, "cannot parse line number")
           }
 
-        locations += MessageLocation(file, line.toInt)
+        locations += MessageLocation(new File(file), line.toInt)
       } else {
-        locations += MessageLocation(str, -1)
+        locations += MessageLocation(new File(str), -1)
       }
 
     case ',' =>

@@ -39,11 +39,11 @@ object ExtractorSettings {
     val implicitContext = setts.get("implicitContext").filter(_.nonEmpty)
     val escapeUnicode = setts.get("escapeUnicode").exists(_ == "true")
 
-    ExtractorSettings(enable, baseDir, targetFile, implicitContext, taggedFile, escapeUnicode)
+    ExtractorSettings(enable, new File(baseDir), targetFile, implicitContext, taggedFile, escapeUnicode)
   }
 }
 
-case class ExtractorSettings(enable: Boolean, srcBaseDir: String, targetFile: File, implicitContext: Option[String],
+case class ExtractorSettings(enable: Boolean, srcBaseDir: File, targetFile: File, implicitContext: Option[String],
                              taggedFile: Option[File], escapeUnicode: Boolean) {
   def mergeContext(ctx: Option[String]): Option[String] = (implicitContext, ctx) match {
     case (None,    None)    => None
