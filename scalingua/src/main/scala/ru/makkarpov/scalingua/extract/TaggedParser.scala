@@ -66,7 +66,7 @@ object TaggedParser {
           val comments =
             if (v.has("comments")) {
               if (v.isString("comments")) v.getString("comments") :: Nil
-              else v.getArray("comments").asScala.map(_.asInstanceOf[String])
+              else v.getArray("comments").asScala.toList.map(_.asInstanceOf[String])
             } else Nil
 
           ret += TaggedMessage(k, msg, plural, comments)

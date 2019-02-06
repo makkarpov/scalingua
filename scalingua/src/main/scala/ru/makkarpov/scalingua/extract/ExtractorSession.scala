@@ -18,7 +18,7 @@ package ru.makkarpov.scalingua.extract
 
 import java.io.{File, IOException}
 
-import ru.makkarpov.scalingua.Compat.Context
+import ru.makkarpov.scalingua.Compat._
 import ru.makkarpov.scalingua.extract.ExtractorSession.MutableMessage
 import ru.makkarpov.scalingua.extract.MessageExtractor.setupSession
 import ru.makkarpov.scalingua.pofile._
@@ -65,7 +65,7 @@ object ExtractorSession {
     }
 
     def toMsg: Message = {
-      val header = MessageHeader(comments, extractedComments, locations.toSeq, flags, tag)
+      val header = MessageHeader(comments.toList, extractedComments.toList, locations.toList, flags, tag)
 
       msgidPlural match {
         case None => Message.Singular(header, context, msgid, translations.headOption.getOrElse(MultipartString.empty))
@@ -205,7 +205,7 @@ class ExtractorSession(val global: Universe, val setts: ExtractorSettings) {
 
     byFile.get(f) match {
       case Some(xs) =>
-        for (x <- xs) x.locations.retain(_.file != f)
+        for (x <- xs) x.locations.filterInPlace(_.file != f)
         byFile.remove(f)
 
       case None => // all ok

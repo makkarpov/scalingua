@@ -22,7 +22,7 @@ object InsertableIterator {
   }
 }
 
-class InsertableIterator[T](backing: Iterator[T]) extends Iterator[T] with BufferedIterator[T] {
+class InsertableIterator[T](backing: Iterator[T]) extends Iterator[T] with scala.collection.BufferedIterator[T] {
   private var queue = List.empty[T]
 
   override def hasNext: Boolean = queue.nonEmpty || backing.hasNext

@@ -25,4 +25,11 @@ object Compat {
   def prettyPrint(c: Context)(e: c.Tree): String = c.universe.showCode(e)
   def termName(c: Context)(s: String): c.TermName = c.universe.TermName(c.freshName(s))
   def typecheck(c: Context)(e: c.Tree): c.Tree = c.typecheck(e)
+
+  def processEscapes(s: String) = scala.StringContext.processEscapes(s)
+
+  implicit class MutSetOps[A](s: scala.collection.mutable.Set[A]) {
+    def filterInPlace(p: A => Boolean) = s.retain(p)
+  }
+
 }

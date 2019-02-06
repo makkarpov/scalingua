@@ -46,8 +46,8 @@ object PlayUtils {
       value = value0.trim
     } yield {
       qPattern.findFirstMatchIn(value) match {
-        case Some(m) => (m.group(1).toDouble, m.before.toString)
-        case None => (1.0, value) // “The default value is q=1.”
+        case Some(m) => (BigDecimal(m.group(1)), m.before.toString)
+        case None => (BigDecimal(1.0), value) // “The default value is q=1.”
       }
     }).sortBy(-_._1).iterator
 

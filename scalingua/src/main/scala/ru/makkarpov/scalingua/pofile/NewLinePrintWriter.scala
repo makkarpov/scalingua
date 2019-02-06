@@ -7,7 +7,7 @@ class NewLinePrintWriter(out: Writer, autoFlush: Boolean)
   extends PrintWriter(out, autoFlush) {
   def this(out: Writer) = this(out, false)
 
-  override def println() {
+  override def println(): Unit = {
     print("\n")
     if (autoFlush) flush()
   }
