@@ -158,30 +158,24 @@ abstract class CompiledLanguage extends Language with PluralFunction with Tagged
 
   def messageData = MessageData(singular, singularCtx, plural, pluralCtx)
 
-  /** @inheritdoc */
   override def singular(msgid: String): String = singular.getOrElse(msgid, msgid)
 
-  /** @inheritdoc */
   override def singular(msgctx: String, msgid: String): String = singularCtx.getOrElse(msgctx -> msgid, msgid)
 
-  /** @inheritdoc */
   override def plural(msgid: String, msgidPlural: String, n: Long): String = plural.get(msgid) match {
     case Some(tr) => tr(plural(n))
     case None => if (n == 1) msgid else msgidPlural
   }
 
-  /** @inheritdoc */
   override def plural(msgctx: String, msgid: String, msgidPlural: String, n: Long): String =
     pluralCtx.get(msgctx -> msgid) match {
       case Some(tr) => tr(plural(n))
       case None => if (n == 1) msgid else msgidPlural
     }
 
-  /** @inheritdoc */
   override def taggedSingular(tag: String): String =
     if (singularTag.contains(tag)) singularTag(tag) else taggedFallback.taggedSingular(tag)
 
-  /** @inheritdoc */
   override def taggedPlural(tag: String, n: Long): String =
     if (pluralTag.contains(tag)) pluralTag(tag)(plural(n)) else taggedFallback.taggedPlural(tag, n)
 

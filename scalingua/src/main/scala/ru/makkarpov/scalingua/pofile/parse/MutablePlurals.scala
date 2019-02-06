@@ -26,7 +26,7 @@ class MutablePlurals {
     _parts += n -> str
   }
 
-  def result(): Seq[MultipartString] = {
+  def result(): scala.collection.immutable.Seq[MultipartString] = {
     val cnt = _parts.size
 
     for (i <- 0 until cnt)

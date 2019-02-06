@@ -150,7 +150,7 @@ object Macros {
     // Extract raw interpolation parts
     val parts = c.prefix.tree match {
       case Apply(_, List(Apply(_, rawParts))) =>
-        rawParts.map(stringLiteral(c)(_)).map(StringContext.treatEscapes)
+        rawParts.map(stringLiteral(c)(_)).map(processEscapes)
 
       case _ =>
         c.abort(c.enclosingPosition, s"failed to match prefix, got ${prettyPrint(c)(c.prefix.tree)}")
@@ -177,7 +177,7 @@ object Macros {
 
     val parts = c.prefix.tree match {
       case Apply(_, List(Apply(_, rawParts))) =>
-        rawParts.map(stringLiteral(c)(_)).map(StringContext.treatEscapes)
+        rawParts.map(stringLiteral(c)(_)).map(processEscapes)
 
       case _ =>
         c.abort(c.enclosingPosition, s"failed to match prefix, got ${prettyPrint(c)(c.prefix.tree)}")
