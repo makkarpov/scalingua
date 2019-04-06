@@ -1,7 +1,7 @@
 import sbt.Keys._
 
 name := "scalingua-root"
-version := "0.8-SNAPSHOT"
+version := "0.8.1-SNAPSHOT"
 crossPaths := true
 
 publishArtifact := false
