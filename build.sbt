@@ -1,13 +1,11 @@
 import sbt.Keys._
 
 name := "scalingua-root"
-version := "0.7.5-SNAPSHOT"
+version := "0.8-SNAPSHOT"
 crossPaths := true
 
 publishArtifact := false
 publishTo := Some(Resolver.file("Transient repository", file("/tmp/unused")))
-
-enablePlugins(CrossPerProjectPlugin)
 
 val common = Seq(
   organization := "ru.makkarpov",
@@ -15,7 +13,7 @@ val common = Seq(
 
   crossPaths := true,
   scalaVersion := "2.10.4",
-  crossScalaVersions := Seq("2.10.4", "2.11.12", "2.12.8", "2.13.0-M5"),
+  crossScalaVersions := Seq("2.11.12", "2.12.8", "2.13.0-M5"),
   scalacOptions ++= Seq( "-Xfatal-warnings", "-feature", "-deprecation" ),
 
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.6-SNAP6" % Test,
@@ -127,6 +125,7 @@ lazy val play = project
 
 lazy val plugin = project
   .in(file("sbt-plugin"))
+  .enablePlugins(SbtPlugin)
   .settings(common:_*)
   .settings(
     name := "Scalingua SBT plugin",
@@ -138,7 +137,6 @@ lazy val plugin = project
     crossScalaVersions := Seq(scalaVersion.value),
     sbtPlugin := true,
 
-    ScriptedPlugin.scriptedSettings,
     scriptedLaunchOpts ++= Seq(
       "-Xmx1024M", "-XX:MaxPermSize=256M", "-Dscalingua.version=" + (version in LocalRootProject).value
     ),

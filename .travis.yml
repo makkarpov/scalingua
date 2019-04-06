@@ -9,7 +9,7 @@ jdk:
 
 script:
  - sbt +test
- - sbt "set version += \"-SNAPSHOT\"" +publishLocal scripted
+ - sbt +publishLocal scripted
 
 cache:
   directories:

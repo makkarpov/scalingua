@@ -1,6 +1,7 @@
 import sbt.{Def, _}
 import Keys._
 import sbt.plugins.JvmPlugin
+import scala.sys.process._
 
 object ParserGenerator extends AutoPlugin {
   object autoImport {

@@ -7,5 +7,5 @@ libraryDependencies ++= Seq(
     if(v == null) throw new RuntimeException("Scalingua version is not defined")
     else v
   },
-  "org.scalatest" %% "scalatest" % "2.2.6" % Test
+  "org.scalatest" %% "scalatest" % "3.0.7" % Test
 )
