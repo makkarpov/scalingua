@@ -32,4 +32,5 @@ object Compat {
     def filterInPlace(p: A => Boolean) = s.retain(p)
   }
 
+  val CollectionConverters = scala.collection.JavaConverters
 }

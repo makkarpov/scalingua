@@ -27,4 +27,6 @@ object Compat {
   implicit class MutSetOps[A](s: scala.collection.mutable.Set[A]) {
     def filterInPlace(p: A => Boolean) = s.retain(p)
   }
+
+  val CollectionConverters = scala.collection.JavaConverters
 }
