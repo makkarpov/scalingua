@@ -27,4 +27,6 @@ object Compat {
   def typecheck(c: Context)(e: c.Tree): c.Tree = c.typecheck(e)
 
   def processEscapes(s: String) = scala.StringContext.processEscapes(s)
+
+  val CollectionConverters = scala.jdk.CollectionConverters
 }

@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets
 import com.grack.nanojson.{JsonObject, JsonParser, JsonParserException}
 import ru.makkarpov.scalingua.pofile.Message.{Plural, Singular}
 import ru.makkarpov.scalingua.pofile._
-import scala.collection.JavaConverters._
+import ru.makkarpov.scalingua.Compat.CollectionConverters._
 
 object TaggedParser {
   val TaggedFileName = "tagged-messages.json"
