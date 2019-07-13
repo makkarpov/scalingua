@@ -13,7 +13,7 @@ val common = Seq(
 
   crossPaths := true,
   scalaVersion := "2.10.4",
-  crossScalaVersions := Seq("2.11.12", "2.12.8", "2.13.0"),
+  crossScalaVersions := Seq("2.11.12", "2.12.7", "2.13.0"),
   scalacOptions ++= Seq( "-Xfatal-warnings", "-feature", "-deprecation" ),
 
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test,
@@ -115,7 +115,7 @@ lazy val play = project
     // Recent versions of Play supports only recent version of Scala.
     // We should keep `crossPath` to keep naming consistent
     scalaVersion := "2.11.12",
-    crossScalaVersions := Seq("2.11.12", "2.12.8", "2.13.0"),
+    crossScalaVersions := Seq("2.11.12", "2.12.7", "2.13.0"),
 
     libraryDependencies ++= Seq(
       "com.typesafe.play" %% "twirl-api" % "1.4.2",
