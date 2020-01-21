@@ -19,11 +19,12 @@ package ru.makkarpov.scalingua.test
 import java.io.{ByteArrayInputStream, File}
 import java.nio.charset.StandardCharsets
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import ru.makkarpov.scalingua.pofile._
 import ru.makkarpov.scalingua.pofile.parse.{LexerException, ParserException}
 
-class PoFileTest extends FlatSpec with Matchers {
+class PoFileTest extends AnyFlatSpec with Matchers {
   def t(data: String): Seq[Message] = {
     val bais = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8))
     PoFile(bais).toList

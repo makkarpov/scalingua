@@ -12,11 +12,11 @@ val common = Seq(
   version := (version in LocalRootProject).value,
 
   crossPaths := true,
-  scalaVersion := "2.10.4",
-  crossScalaVersions := Seq("2.11.12", "2.12.7", "2.13.0"),
+  scalaVersion := "2.12.10", //should be the same for all projects for cross-build to work
+  crossScalaVersions := Seq("2.10.7", "2.11.12", scalaVersion.value, "2.13.1"),
   scalacOptions ++= Seq( "-Xfatal-warnings", "-feature", "-deprecation" ),
 
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test,
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.1.0" % Test,
 
   publishArtifact in Test := false,
   publishMavenStyle := true,
@@ -75,8 +75,8 @@ lazy val scalingua = project
     libraryDependencies ++= {
       CrossVersion.binaryScalaVersion(scalaVersion.value) match {
         case "2.10" => Seq(
-          compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
-          "org.scalamacros" %% "quasiquotes" % "2.0.1"
+          compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
+          "org.scalamacros" %% "quasiquotes" % "2.1.1"
         )
         case _ => Nil
       }
@@ -113,13 +113,11 @@ lazy val play = project
     description := "An integration module for Play Framework",
 
     // Recent versions of Play supports only recent version of Scala.
-    // We should keep `crossPath` to keep naming consistent
-    scalaVersion := "2.11.12",
-    crossScalaVersions := Seq("2.11.12", "2.12.7", "2.13.0"),
+    crossScalaVersions := Seq(scalaVersion.value, "2.13.1"),
 
     libraryDependencies ++= Seq(
-      "com.typesafe.play" %% "twirl-api" % "1.4.2",
-      "com.typesafe.play" %% "play" % "2.7.3"
+      "com.typesafe.play" %% "twirl-api" % "1.5.0",
+      "com.typesafe.play" %% "play" % "2.8.0"
     )
   ).dependsOn(scalingua)
 
@@ -133,12 +131,12 @@ lazy val plugin = project
     description := "SBT plugin that compiles locales, manages locations of *.pot files and so on",
 
     crossPaths := false,
-    scalaVersion := scala.util.Properties.versionNumberString,
     crossScalaVersions := Seq(scalaVersion.value),
-    sbtPlugin := true,
 
     scriptedLaunchOpts ++= Seq(
       "-Xmx1024M", "-XX:MaxPermSize=256M", "-Dscalingua.version=" + (version in LocalRootProject).value
     ),
-    scriptedBufferLog := false
+    scriptedBufferLog := false,
+    scripted := scripted.dependsOn(scalingua / publishLocal, core / publishLocal).evaluated,
+    pluginCrossBuild / sbtVersion := "1.2.8", //https://github.com/sbt/sbt/issues/5049
   ).dependsOn(scalingua)

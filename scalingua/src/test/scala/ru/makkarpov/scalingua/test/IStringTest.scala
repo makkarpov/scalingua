@@ -16,10 +16,11 @@
 
 package ru.makkarpov.scalingua.test
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import ru.makkarpov.scalingua.I18n._
 
-class IStringTest extends FlatSpec with Matchers {
+class IStringTest extends AnyFlatSpec with Matchers {
   val mockLang1 = new MockLang("1")
   val mockLang2 = new MockLang("2")
   val mockLang3 = new MockLang("3")

@@ -1,17 +1,18 @@
 language: scala
 sudo: false
-scala:
- - 2.11.7
-
-# Play 2.5.0 requires Java 8
-jdk:
- - oraclejdk8
+dist: xenial
+jdk: openjdk8
 
 script:
- - sbt +test
- - sbt +publishLocal scripted
+ - sbt +test scripted
+
+before_cache:
+  - rm -fv $HOME/.ivy2/.sbt.ivy.lock
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt        -name "*.lock"               -print -delete
 
 cache:
   directories:
   - $HOME/.sbt
+  - $HOME/.cache/coursier
   - $HOME/.ivy2/cache

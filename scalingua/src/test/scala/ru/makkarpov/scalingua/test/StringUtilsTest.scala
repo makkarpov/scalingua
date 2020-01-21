@@ -16,10 +16,11 @@
 
 package ru.makkarpov.scalingua.test
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import ru.makkarpov.scalingua.OutputFormat
 
-class StringUtilsTest extends FlatSpec with Matchers {
+class StringUtilsTest extends AnyFlatSpec with Matchers {
   it should "escape strings" in {
     import ru.makkarpov.scalingua.StringUtils.{escape => f}
 
