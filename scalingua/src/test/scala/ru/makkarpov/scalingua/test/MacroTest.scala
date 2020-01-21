@@ -16,11 +16,11 @@
 
 package ru.makkarpov.scalingua.test
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import ru.makkarpov.scalingua.I18n._
-import ru.makkarpov.scalingua.plural.Suffix
 
-class MacroTest extends FlatSpec with Matchers {
+class MacroTest extends AnyFlatSpec with Matchers {
   implicit val mockLang = new MockLang("")
 
   it should "handle string interpolations" in {

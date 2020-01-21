@@ -16,10 +16,11 @@
 
 package ru.makkarpov.scalingua.test
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import ru.makkarpov.scalingua.plural.Expression
 
-class ParserTest extends FlatSpec with Matchers {
+class ParserTest extends AnyFlatSpec with Matchers {
   import ru.makkarpov.scalingua.plural.Parser.{apply => p}
 
   it should "evaluate simple expressions" in {

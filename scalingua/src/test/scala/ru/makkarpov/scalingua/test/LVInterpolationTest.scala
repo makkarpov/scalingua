@@ -16,11 +16,12 @@
 
 package ru.makkarpov.scalingua.test
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import ru.makkarpov.scalingua.LValue
 import ru.makkarpov.scalingua.I18n._
 
-class LVInterpolationTest extends FlatSpec with Matchers {
+class LVInterpolationTest extends AnyFlatSpec with Matchers {
   val langLvalue = new LValue[String](l => s"L'${l.id.toString}'")
 
   it should "interpolate LValues with correct languages" in {

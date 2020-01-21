@@ -5,7 +5,7 @@ libraryDependencies in ThisBuild ++= Seq(
     if(v == null) throw new RuntimeException("Scalingua version is not defined")
     else v
   },
-  "org.scalatest" %% "scalatest" % "3.0.7" % Test
+  "org.scalatest" %% "scalatest" % "3.1.0" % Test
 )
 
 lazy val subA = project

@@ -1,10 +1,10 @@
-import org.scalatest
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import ru.makkarpov.scalingua.{LanguageId, Messages, Language}
 import ru.makkarpov.scalingua.I18n._
 
 // test whether Scalingua is able to compile messages for multiple languages at once:
-class Test extends FlatSpec with Matchers {
+class Test extends AnyFlatSpec with Matchers {
   implicit val messages = Messages.compiled()
 
   it should "provide messages for English" in {

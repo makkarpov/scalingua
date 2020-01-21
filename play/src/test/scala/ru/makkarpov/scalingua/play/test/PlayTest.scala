@@ -16,11 +16,12 @@
 
 package ru.makkarpov.scalingua.play.test
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import ru.makkarpov.scalingua.{Language, Messages, TaggedLanguage}
 import ru.makkarpov.scalingua.play.I18n._
 
-class PlayTest extends FlatSpec with Matchers {
+class PlayTest extends AnyFlatSpec with Matchers {
   it should "handle HTML translations" in {
     implicit val lang = Language.English
     val x = "\"List<String>\""

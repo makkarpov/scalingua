@@ -16,12 +16,13 @@
 
 package ru.makkarpov.scalingua.test
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import ru.makkarpov.scalingua.{I18n, Language, Macros, OutputFormat}
 
 import scala.language.experimental.macros
 
-class CustomI18nTest extends FlatSpec with Matchers {
+class CustomI18nTest extends AnyFlatSpec with Matchers {
   case class CStr(s: String)
 
   implicit val CStrFormat = new OutputFormat[CStr] {
