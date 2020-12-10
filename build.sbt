@@ -50,7 +50,8 @@ val common = Seq(
   }
 )
 
-lazy val core = project
+lazy val core =  crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
   .settings(common:_*)
   .settings(
     name := "Scalingua Core",
@@ -58,8 +59,13 @@ lazy val core = project
     description := "A minimal set of runtime classes for Scalingua"
   )
 
-lazy val scalingua = project
-  .enablePlugins(ParserGenerator, AssemblyPlugin)
+lazy val coreJVM = core.jvm
+lazy val coreJS = core.js
+
+lazy val scalingua =  crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .jvmConfigure(_.enablePlugins(ParserGenerator, AssemblyPlugin))
+  .jsConfigure(_.enablePlugins(ParserGenerator, AssemblyPlugin))
   .settings(common:_*)
   .settings(
     name := "Scalingua",
@@ -91,7 +97,11 @@ lazy val scalingua = project
       f.data.getName.contains("java-cup-runtime")
     }
   )
-  .dependsOn(core)
+  .jvmConfigure(_.dependsOn(coreJVM))
+  .jsConfigure(_.dependsOn(coreJS))
+
+lazy val scalinguaJVM = scalingua.jvm
+lazy val scalinguaJS = scalingua.js
 
 lazy val scalingua_shadedCup = project.in(file("target/shaded-cup"))
     .settings(common:_*)
@@ -100,10 +110,10 @@ lazy val scalingua_shadedCup = project.in(file("target/shaded-cup"))
       normalizedName := "scalingua-shaded",
       description := "Scalingua with shaded CUP runtime to prevent conflicts",
 
-      packageBin in Compile := (assembly in (scalingua, Compile)).value,
-      libraryDependencies := (libraryDependencies in scalingua).value.filterNot(_.name.contains("java-cup"))
+      packageBin in Compile := (assembly in (scalinguaJVM, Compile)).value,
+      libraryDependencies := (libraryDependencies in scalinguaJVM).value.filterNot(_.name.contains("java-cup"))
     )
-    .dependsOn(scalingua.dependencies:_*)
+    .dependsOn(scalinguaJVM.dependencies:_*)
 
 lazy val play = project
   .settings(common:_*)
@@ -119,7 +129,7 @@ lazy val play = project
       "com.typesafe.play" %% "twirl-api" % "1.5.0",
       "com.typesafe.play" %% "play" % "2.8.0"
     )
-  ).dependsOn(scalingua)
+  ).dependsOn(scalinguaJVM)
 
 lazy val plugin = project
   .in(file("sbt-plugin"))
@@ -137,6 +147,6 @@ lazy val plugin = project
       "-Xmx1024M", "-XX:MaxPermSize=256M", "-Dscalingua.version=" + (version in LocalRootProject).value
     ),
     scriptedBufferLog := false,
-    scripted := scripted.dependsOn(scalingua / publishLocal, core / publishLocal).evaluated,
+    scripted := scripted.dependsOn(scalinguaJVM / publishLocal, coreJVM / publishLocal).evaluated,
     pluginCrossBuild / sbtVersion := "1.2.8", //https://github.com/sbt/sbt/issues/5049
-  ).dependsOn(scalingua)
+  ).dependsOn(scalinguaJVM)
