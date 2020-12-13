@@ -13,7 +13,7 @@ val common = Seq(
 
   crossPaths := true,
   scalaVersion := "2.12.12", //should be the same for all projects for cross-build to work
-  crossScalaVersions := Seq("2.10.7", "2.11.12", scalaVersion.value, "2.13.4"),
+  crossScalaVersions := Seq("2.11.12", scalaVersion.value, "2.13.4"),
   scalacOptions ++= Seq( "-Xfatal-warnings", "-feature", "-deprecation" ),
 
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.1.0" % Test,
@@ -77,16 +77,6 @@ lazy val scalingua =  crossProject(JSPlatform, JVMPlatform)
       "com.github.vbmacher" % "java-cup-runtime" % "11b-20160615",
       "com.grack" % "nanojson" % "1.2"
     ),
-
-    libraryDependencies ++= {
-      CrossVersion.binaryScalaVersion(scalaVersion.value) match {
-        case "2.10" => Seq(
-          compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
-          "org.scalamacros" %% "quasiquotes" % "2.1.1"
-        )
-        case _ => Nil
-      }
-    },
 
     assemblyShadeRules in assembly := Seq(
       ShadeRule.rename("java_cup.runtime.**" -> "ru.makkarpov.scalingua.pofile.shaded_javacup.@1").inAll
