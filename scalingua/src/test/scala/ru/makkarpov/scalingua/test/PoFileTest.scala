@@ -67,7 +67,8 @@ class PoFileTest extends AnyFlatSpec with Matchers {
   }
 
   it should "parse singular forms" in {
-    t("""#  comment
+    val escapesMsgStr = "\\u0000\\n\\t\\r"
+    t(s"""#  comment
         |#: x/file.scala:20
         |#, fuzzy
         |#. tr comment
@@ -77,7 +78,7 @@ class PoFileTest extends AnyFlatSpec with Matchers {
         |msgid "1234"
         |msgstr "test"
         |msgid "escapes"
-        |msgstr "\u0000\n\t\r"
+        |msgstr "$escapesMsgStr"
       """.stripMargin) shouldBe Seq(
         Message.Singular(
           header = MessageHeader(

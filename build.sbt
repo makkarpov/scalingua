@@ -12,8 +12,8 @@ val common = Seq(
   version := (version in LocalRootProject).value,
 
   crossPaths := true,
-  scalaVersion := "2.12.10", //should be the same for all projects for cross-build to work
-  crossScalaVersions := Seq("2.10.7", "2.11.12", scalaVersion.value, "2.13.1"),
+  scalaVersion := "2.12.12", //should be the same for all projects for cross-build to work
+  crossScalaVersions := Seq("2.10.7", "2.11.12", scalaVersion.value, "2.13.4"),
   scalacOptions ++= Seq( "-Xfatal-warnings", "-feature", "-deprecation" ),
 
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.1.0" % Test,
@@ -123,7 +123,7 @@ lazy val play = project
     description := "An integration module for Play Framework",
 
     // Recent versions of Play supports only recent version of Scala.
-    crossScalaVersions := Seq(scalaVersion.value, "2.13.1"),
+    crossScalaVersions := Seq(scalaVersion.value, "2.13.4"),
 
     libraryDependencies ++= Seq(
       "com.typesafe.play" %% "twirl-api" % "1.5.0",

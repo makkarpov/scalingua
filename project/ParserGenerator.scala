@@ -17,7 +17,7 @@ object ParserGenerator extends AutoPlugin {
     inConfig(Compile)(configurationSettings) ++ inConfig(Test)(configurationSettings)
 
   private def generationSettings(extension: String, dir: String, task: TaskKey[Seq[File]]): Seq[Def.Setting[_]] = Seq(
-    sourceDirectories in task := Seq(sourceDirectory.value),
+    sourceDirectories in task := Seq(baseDirectory.value / ".." / "src" / "main" / "pofile"),
     includeFilter in task := extension,
     excludeFilter in task := HiddenFileFilter,
 

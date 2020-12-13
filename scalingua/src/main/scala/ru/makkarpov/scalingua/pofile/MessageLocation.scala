@@ -34,5 +34,5 @@ object MessageLocation {
 }
 
 case class MessageLocation(file: File, line: Int) {
-  def fileString: String = file.toString.replaceAllLiterally("""\""", "/")
+  def fileString: String = file.toString.replace("""\""", "/")
 }

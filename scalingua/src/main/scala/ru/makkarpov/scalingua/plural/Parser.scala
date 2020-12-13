@@ -144,6 +144,8 @@ object Parser {
         case _: ValueLike =>
           bld += t
           nextUnary = false
+
+        case ParenthesesToken(_) =>
       }
 
       if (nextUnary)
