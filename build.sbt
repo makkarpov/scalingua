@@ -16,7 +16,7 @@ val common = Seq(
   crossScalaVersions := Seq("2.11.12", scalaVersion.value, "2.13.4"),
   scalacOptions ++= Seq( "-Xfatal-warnings", "-feature", "-deprecation" ),
 
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.1.0" % Test,
+  libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.2" % Test,
 
   publishArtifact in Test := false,
   publishMavenStyle := true,

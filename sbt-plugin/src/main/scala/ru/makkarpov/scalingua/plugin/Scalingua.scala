@@ -33,6 +33,9 @@ object Scalingua extends AutoPlugin {
 
     val includeImplicitContext = settingKey[Boolean]("Specifies whether to include implicit context in compiled messages")
 
+    val compileLocalesStrategy =  settingKey[String](
+      "Specifies how CompiledLanguage retrieves its translation file. Must be one of [ReadFromResources, InlineBase64]. Default: ReadFromResources")
+
     val taggedFile = settingKey[Option[File]]("Tagged file to include in target .pot")
 
     val escapeUnicode = settingKey[Boolean]("Whether to escape unicode characters or not")
@@ -55,6 +58,7 @@ object Scalingua extends AutoPlugin {
   def localeSettings = Seq(
     templateTarget := crossTarget.value / "messages" / (Defaults.nameForSrc(configuration.value.name) + ".pot"),
     localePackage := "locales",
+    compileLocalesStrategy := "ReadFromResources",
     implicitContext := None,
     includeImplicitContext := true,
     taggedFile := None,
@@ -183,9 +187,15 @@ object Scalingua extends AutoPlugin {
     withGenContext(packageLocales, "data_%(l)_%(c).bin", "compiled_english_tags.bin")(
       perLang = PoCompiler.doPackaging, englishTags = PoCompiler.packageEnglishTags)
 
-  def compileLocalesTask = Def.task {
-    val r = withGenContext(compileLocales, "Language_%(l)_%(c).scala", "CompiledEnglishTags.scala")(
-      perLang = PoCompiler.doCompiling, englishTags = PoCompiler.compileEnglishTags).value
+  def compileLocalesTask = Def.taskDyn {
+    val strategy = PoCompilerStrategy.getStrategy((compileLocalesStrategy in compileLocales).value)
+    val doCompiling: GenerationContext => Unit = PoCompiler.doCompiling(strategy)
+    val r = withGenContext(
+      compileLocales,
+      "Language_%(l)_%(c).scala",
+      "CompiledEnglishTags.scala")(
+      perLang = doCompiling,
+      englishTags = PoCompiler.compileEnglishTags)
 
     val idx = {
       val langs = collectLangs(compileLocales).value
@@ -199,6 +209,8 @@ object Scalingua extends AutoPlugin {
       tgt
     }
 
-    r :+ idx
+    Def.task {
+      r.value :+ idx
+    }
   }
 }

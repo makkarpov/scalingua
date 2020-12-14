@@ -1,0 +1,49 @@
+
+#: src/test/scala/Test.scala:13
+#: src/test/scala/Test.scala:20
+#: src/test/scala/Test.scala:27
+#: src/test/scala/Test.scala:34
+#: src/test/scala/Test.scala:41
+msgid "Hello, world!"
+msgstr ""
+
+#: src/test/scala/Test.scala:14
+#: src/test/scala/Test.scala:21
+#: src/test/scala/Test.scala:28
+#: src/test/scala/Test.scala:35
+#: src/test/scala/Test.scala:42
+msgid "There is %(n) dog!"
+msgid_plural "There is %(n) dogs!"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/test/scala/Test.scala:48
+msgid "Percents! %"
+msgstr ""
+
+#: src/test/scala/Test.scala:49
+msgid "Percents!! %"
+msgstr ""
+
+#: src/test/scala/Test.scala:52
+msgid "Percents with variables%%: %(x), percents%%"
+msgstr ""
+
+#: src/test/scala/Test.scala:54
+msgid "Percents after variable: %(x)%%"
+msgstr ""
+
+#: src/test/scala/Test.scala:57
+msgid "Look, I have %(x) percent: %%!"
+msgid_plural "Look, I have %(x) percents: %%!"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/test/scala/Test.scala:69
+msgid "Привет, мир!"
+msgstr ""
+
+#: src/test/scala/Test.scala:70
+msgid "Weird\u2019quotes"
+msgstr ""
+
