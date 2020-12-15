@@ -28,13 +28,15 @@ object Scalingua extends AutoPlugin {
     val localePackage = settingKey[String]("A package with compiled locale files")
 
     val implicitContext = settingKey[Option[String]](
-                                  "Context that will get implicitly added to the beginning of each message. "+
-                                  "Useful to scope messages of whole project.")
+      "Context that will get implicitly added to the beginning of each message. " +
+        "Useful to scope messages of whole project.")
 
-    val includeImplicitContext = settingKey[Boolean]("Specifies whether to include implicit context in compiled messages")
+    val includeImplicitContext = settingKey[Boolean](
+      "Specifies whether to include implicit context in compiled messages")
 
-    val compileLocalesStrategy =  settingKey[String](
-      "Specifies how CompiledLanguage retrieves its translation file. Must be one of [ReadFromResources, InlineBase64]. Default: ReadFromResources")
+    val compileLocalesStrategy = settingKey[String](
+      "Specifies how CompiledLanguage retrieves its translation file." +
+        "Must be one of [ReadFromResources, InlineBase64]. Default: ReadFromResources")
 
     val taggedFile = settingKey[Option[File]]("Tagged file to include in target .pot")
 
@@ -107,10 +109,10 @@ object Scalingua extends AutoPlugin {
 
   private def longestCommonPrefix(s: Seq[File]) = s match {
     case Seq() => ""
-    case Seq(head, tail @ _*) =>
+    case Seq(head, tail@_*) =>
       var current = head.getCanonicalPath
       for (f <- tail)
-        current = current.zip(f.getCanonicalPath).takeWhile{ case (a, b) => a == b }.map(_._1).mkString
+        current = current.zip(f.getCanonicalPath).takeWhile { case (a, b) => a == b }.map(_._1).mkString
       current
   }
 
@@ -183,19 +185,32 @@ object Scalingua extends AutoPlugin {
     ret.result()
   }
 
-  def packageLocalesTask =
-    withGenContext(packageLocales, "data_%(l)_%(c).bin", "compiled_english_tags.bin")(
-      perLang = PoCompiler.doPackaging, englishTags = PoCompiler.packageEnglishTags)
+  def packageLocalesTask = Def.taskDyn {
+    val strategy = PoCompilerStrategy.getStrategy((compileLocalesStrategy in compileLocales).value)
+
+    if (strategy.isPackagingNecessary)
+      withGenContext(
+        packageLocales,
+        "data_%(l)_%(c).bin",
+        "compiled_english_tags.bin")(
+        perLang = PoCompiler.doPackaging,
+        englishTags = PoCompiler.packageEnglishTags)
+    else Def.task[Seq[File]] {
+      Seq.empty[File]
+    }
+  }
 
   def compileLocalesTask = Def.taskDyn {
     val strategy = PoCompilerStrategy.getStrategy((compileLocalesStrategy in compileLocales).value)
     val doCompiling: GenerationContext => Unit = PoCompiler.doCompiling(strategy)
+    val compileEnglishTags: GenerationContext => Unit = PoCompiler.compileEnglishTags(strategy)
+
     val r = withGenContext(
       compileLocales,
       "Language_%(l)_%(c).scala",
       "CompiledEnglishTags.scala")(
       perLang = doCompiling,
-      englishTags = PoCompiler.compileEnglishTags)
+      englishTags = compileEnglishTags)
 
     val idx = {
       val langs = collectLangs(compileLocales).value

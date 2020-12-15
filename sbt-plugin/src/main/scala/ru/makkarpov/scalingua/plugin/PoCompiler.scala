@@ -1,18 +1,18 @@
-/** ****************************************************************************
-  * Copyright © 2016 Maxim Karpov                                              *
-  * *
-  * Licensed under the Apache License, Version 2.0 (the "License");            *
-  * you may not use this file except in compliance with the License.           *
-  * You may obtain a copy of the License at                                    *
-  * *
-  * http://www.apache.org/licenses/LICENSE-2.0                             *
-  * *
-  * Unless required by applicable law or agreed to in writing, software        *
-  * distributed under the License is distributed on an "AS IS" BASIS,          *
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
-  * See the License for the specific language governing permissions and        *
-  * limitations under the License.                                             *
-  * **************************************************************************** */
+/******************************************************************************
+ * Copyright © 2016 Maxim Karpov                                              *
+ *                                                                            *
+ * Licensed under the Apache License, Version 2.0 (the "License");            *
+ * you may not use this file except in compliance with the License.           *
+ * You may obtain a copy of the License at                                    *
+ *                                                                            *
+ *     http://www.apache.org/licenses/LICENSE-2.0                             *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the License is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ ******************************************************************************/
 
 package ru.makkarpov.scalingua.plugin
 
@@ -27,13 +27,13 @@ import ru.makkarpov.scalingua.pofile.parse.{LexerException, ParserException}
 import ru.makkarpov.scalingua.pofile.{Message, MultipartString, NewLinePrintWriter, PoFile}
 
 object PoCompiler {
-  val EndOfFile = 0
-  val Singular = 1
-  val SingularCtx = 2
-  val Plural = 3
-  val PluralCtx = 4
-  val SingularTag = 5
-  val PluralTag = 6
+  val EndOfFile     = 0
+  val Singular      = 1
+  val SingularCtx   = 2
+  val Plural        = 3
+  val PluralCtx     = 4
+  val SingularTag   = 5
+  val PluralTag     = 6
 
   val EnglishTagsClass = "CompiledEnglishTags"
 
@@ -73,7 +73,7 @@ object PoCompiler {
     }
   }
 
-  private def doBinaryGeneration(ctx: GenerationContext, out: OutputStream): Unit = {
+  private def writeBinaryLanguage(ctx: GenerationContext, out: OutputStream): Unit = {
     val dos = new DataOutputStream(out)
     try {
       dos.writeUTF(ctx.srcHash)
@@ -130,8 +130,6 @@ object PoCompiler {
 
       dos.writeByte(EndOfFile)
     } finally dos.close()
-
-
   }
 
   def doPackaging(ctx: GenerationContext): Unit = {
@@ -139,7 +137,7 @@ object PoCompiler {
     if (ctx.checkBinaryHash)
       return
 
-    doBinaryGeneration(ctx, new FileOutputStream(ctx.target))
+    writeBinaryLanguage(ctx, new FileOutputStream(ctx.target))
   }
 
 
@@ -169,8 +167,7 @@ object PoCompiler {
     }
 
     val pw = new NewLinePrintWriter(new OutputStreamWriter(new FileOutputStream(ctx.target), StandardCharsets.UTF_8), false)
-    val initializationBlock = compileStrategy.getInitializationBlock(ctx, (out: OutputStream) => doBinaryGeneration(ctx, out))
-
+    val initializationBlock = compileStrategy.getCompiledLanguageInitializationBlock(ctx, (out: OutputStream) => writeBinaryLanguage(ctx, out))
     try {
       pw.print(
         s"""${GenerationContext.ScalaHashPrefix}${ctx.srcHash}
@@ -206,12 +203,8 @@ object PoCompiler {
     } finally pw.close()
   }
 
-  def packageEnglishTags(ctx: GenerationContext): Unit = {
-    // Should we regenerate file?
-    if (ctx.checkBinaryHash)
-      return
-
-    val dos = new DataOutputStream(new FileOutputStream(ctx.target))
+  def writeBinaryEnglishTags(ctx: GenerationContext, out: OutputStream): Unit = {
+    val dos = new DataOutputStream(out)
     try {
       dos.writeUTF(ctx.srcHash)
 
@@ -233,12 +226,21 @@ object PoCompiler {
     } finally dos.close()
   }
 
-  def compileEnglishTags(ctx: GenerationContext): Unit = {
+  def packageEnglishTags(ctx: GenerationContext): Unit = {
+    // Should we regenerate file?
+    if (ctx.checkBinaryHash)
+      return
+
+    writeBinaryEnglishTags(ctx, new FileOutputStream(ctx.target))
+  }
+
+  def compileEnglishTags(compilerStrategy: PoCompilerStrategy)(ctx: GenerationContext): Unit = {
     // Should we regenerate file?
     if (ctx.checkTextHash)
       return
 
     val pw = new NewLinePrintWriter(new OutputStreamWriter(new FileOutputStream(ctx.target), StandardCharsets.UTF_8), false)
+    val initializationBlock = compilerStrategy.getEnglishTagsInitializationBlock(ctx, (out: OutputStream) => writeBinaryEnglishTags(ctx, out))
     try {
       pw.print(
         s"""${GenerationContext.ScalaHashPrefix}${ctx.srcHash}
@@ -247,12 +249,7 @@ object PoCompiler {
            |import ru.makkarpov.scalingua.CompiledLanguage.EnglishTags
            |
            |object $EnglishTagsClass extends EnglishTags {
-           |  initialize({
-           |    val str = getClass.getResourceAsStream("${ctx.filePrefix}compiled_english_tags.bin")
-           |    if (str eq null)
-           |      throw new NullPointerException("Compiled english tags not found!")
-           |    str
-           |  })
+           |  $initializationBlock
            |}
          """.stripMargin
       )
