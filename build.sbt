@@ -63,7 +63,7 @@ lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
 
 lazy val scalingua =  crossProject(JSPlatform, JVMPlatform)
-  .crossType(CrossType.Pure)
+  .crossType(CrossType.Full)
   .jvmConfigure(_.enablePlugins(ParserGenerator, AssemblyPlugin))
   .jsConfigure(_.enablePlugins(ParserGenerator, AssemblyPlugin))
   .settings(common:_*)

@@ -47,3 +47,13 @@ msgstr ""
 msgid "Weird\u2019quotes"
 msgstr ""
 
+#: src/test/scala/Test.scala:75
+msgid "There is %(n) string in this file!"
+msgid_plural "There are %(n) strings in this file!"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/test/scala/Test.scala:78
+msgid "And it works!"
+msgstr ""
+

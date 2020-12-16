@@ -69,4 +69,13 @@ class Test extends AnyFlatSpec with Matchers {
     t"Привет, мир!" shouldBe "Привет, мир!"
     t"Weird’quotes" shouldBe "Weird’quotes"
   }
+
+  it should "work around Java string literal limit" in {
+    implicit val langId = LanguageId("pl-PL")
+    p("There is %(n) string in this file!", "There are %(n) strings in this file!", 7000) shouldBe
+      "W tym pliku jest 7000 łańcuchów znaków!"
+
+    t("And it works!") shouldBe "A mimo to działa!"
+
+  }
 }
