@@ -18,8 +18,8 @@ package ru.makkarpov.scalingua.test
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import ru.makkarpov.scalingua.LValue
 import ru.makkarpov.scalingua.I18n._
+import ru.makkarpov.scalingua.LValue
 
 class LVInterpolationTest extends AnyFlatSpec with Matchers {
   val langLvalue = new LValue[String](l => s"L'${l.id.toString}'")

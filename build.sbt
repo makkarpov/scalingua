@@ -56,7 +56,9 @@ lazy val core =  crossProject(JSPlatform, JVMPlatform)
   .settings(
     name := "Scalingua Core",
     normalizedName := "scalingua-core",
-    description := "A minimal set of runtime classes for Scalingua"
+    description := "A minimal set of runtime classes for Scalingua",
+
+    libraryDependencies += "org.portable-scala" %%% "portable-scala-reflect" % "1.0.0"
   )
 
 lazy val coreJVM = core.jvm

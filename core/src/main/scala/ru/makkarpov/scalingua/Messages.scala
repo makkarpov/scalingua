@@ -16,6 +16,8 @@
 
 package ru.makkarpov.scalingua
 
+import org.portablescala.reflect._
+
 object Messages {
   /**
     * Load all available languages that are compiled by SBT plugin.
@@ -23,13 +25,14 @@ object Messages {
     * @param pkg Package to seek in. Must be equal to `localePackage` SBT setting.
     * @return A loaded `Messages`
     */
-  def compiled(pkg: String = "locales"): Messages =
-    try {
-      val cls = Class.forName(pkg + (if (pkg.nonEmpty) "." else "") + "Languages$")
-      cls.getField("MODULE$").get(null).asInstanceOf[Messages]
-    } catch {
-      case e: Exception =>
-        throw new RuntimeException(s"Failed to load compiled languages from package '$pkg'", e)
+  def compiled(pkg: String = "locales"): Messages = {
+      val clsOpt = Reflect.lookupLoadableModuleClass(fullyQualifiedClassName(pkg))
+
+      clsOpt match {
+        case Some(value) => value.loadModule().asInstanceOf[Messages]
+        case None =>
+          throw new RuntimeException(s"Failed to load compiled languages from package '$pkg'")
+      }
     }
 
   /**
@@ -39,14 +42,17 @@ object Messages {
     * @param pkg Package to seek in. Must be equal to `localePackage` SBT setting.
     * @return A loaded `Messages`
     */
-  def compiledContext(ctx: ClassLoader, pkg: String = "locales"): Messages =
-    try {
-      val cls = ctx.loadClass(pkg + (if (pkg.nonEmpty) "." else "") + "Languages$")
-      cls.getField("MODULE$").get(null).asInstanceOf[Messages]
-    } catch {
-      case e: Exception =>
-        throw new RuntimeException(s"Failed to load compield languages from package '$pkg' in context of $ctx")
+  def compiledContext(ctx: ClassLoader, pkg: String = "locales"): Messages = {
+    val clsOpt = Reflect.lookupLoadableModuleClass(fullyQualifiedClassName(pkg), ctx)
+
+    clsOpt match {
+      case Some(value) => value.loadModule().asInstanceOf[Messages]
+      case None =>
+        throw new RuntimeException(s"Failed to load compiled languages from package '$pkg' in context of $ctx")
     }
+  }
+
+  private def fullyQualifiedClassName(pkg: String) = pkg + (if (pkg.nonEmpty) "." else "") + "Languages$"
 }
 
 /**

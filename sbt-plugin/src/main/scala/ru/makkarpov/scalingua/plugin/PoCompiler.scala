@@ -194,7 +194,9 @@ object PoCompiler {
         s"""${if (pkg.nonEmpty) s"package $pkg" else ""}
            |
            |import ru.makkarpov.scalingua.{Messages, TaggedLanguage}
+           |import org.portablescala.reflect.annotation.EnableReflectiveInstantiation
            |
+           |@EnableReflectiveInstantiation
            |object Languages extends Messages(${if (hasTags) EnglishTagsClass else "TaggedLanguage.Identity"}${if (langs.nonEmpty) "," else ""}
            |  ${langs.map(l => s"Language_${l.language}_${l.country}").mkString(",\n  ")}
            |)

@@ -4,8 +4,7 @@ import ru.makkarpov.scalingua.{LanguageId, Messages, Language}
 import ru.makkarpov.scalingua.I18n._
 
 class Test extends AnyFlatSpec with Matchers {
-//  implicit val messages = Messages.compiled("some.test.pkg")
-  implicit val messages = some.test.pkg.Languages
+  implicit val messages = Messages.compiled("some.test.pkg")
 
   it should "provide correct messages for en_US" in {
     implicit val langId = LanguageId("en-US")

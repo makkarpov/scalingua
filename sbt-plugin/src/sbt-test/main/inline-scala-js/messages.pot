@@ -1,59 +1,59 @@
 
+#: src/test/scala/Test.scala:12
+#: src/test/scala/Test.scala:19
+#: src/test/scala/Test.scala:26
+#: src/test/scala/Test.scala:33
+#: src/test/scala/Test.scala:40
+msgid "Hello, world!"
+msgstr ""
+
 #: src/test/scala/Test.scala:13
 #: src/test/scala/Test.scala:20
 #: src/test/scala/Test.scala:27
 #: src/test/scala/Test.scala:34
 #: src/test/scala/Test.scala:41
-msgid "Hello, world!"
-msgstr ""
-
-#: src/test/scala/Test.scala:14
-#: src/test/scala/Test.scala:21
-#: src/test/scala/Test.scala:28
-#: src/test/scala/Test.scala:35
-#: src/test/scala/Test.scala:42
 msgid "There is %(n) dog!"
 msgid_plural "There is %(n) dogs!"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/test/scala/Test.scala:48
+#: src/test/scala/Test.scala:47
 msgid "Percents! %"
 msgstr ""
 
-#: src/test/scala/Test.scala:49
+#: src/test/scala/Test.scala:48
 msgid "Percents!! %"
 msgstr ""
 
-#: src/test/scala/Test.scala:52
+#: src/test/scala/Test.scala:51
 msgid "Percents with variables%%: %(x), percents%%"
 msgstr ""
 
-#: src/test/scala/Test.scala:54
+#: src/test/scala/Test.scala:53
 msgid "Percents after variable: %(x)%%"
 msgstr ""
 
-#: src/test/scala/Test.scala:57
+#: src/test/scala/Test.scala:56
 msgid "Look, I have %(x) percent: %%!"
 msgid_plural "Look, I have %(x) percents: %%!"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/test/scala/Test.scala:69
+#: src/test/scala/Test.scala:68
 msgid "Привет, мир!"
 msgstr ""
 
-#: src/test/scala/Test.scala:70
+#: src/test/scala/Test.scala:69
 msgid "Weird\u2019quotes"
 msgstr ""
 
-#: src/test/scala/Test.scala:75
+#: src/test/scala/Test.scala:74
 msgid "There is %(n) string in this file!"
 msgid_plural "There are %(n) strings in this file!"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/test/scala/Test.scala:78
+#: src/test/scala/Test.scala:77
 msgid "And it works!"
 msgstr ""
 
