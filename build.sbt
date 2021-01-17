@@ -143,6 +143,6 @@ lazy val plugin = project
       scalinguaJVM / publishLocal,
       coreJVM / publishLocal,
       scalinguaJS / publishLocal,
-      coreJS/ publishLocal).evaluated,
+      coreJS / publishLocal).evaluated,
     pluginCrossBuild / sbtVersion := "1.2.8", //https://github.com/sbt/sbt/issues/5049
   ).dependsOn(scalinguaJVM)
