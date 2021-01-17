@@ -36,7 +36,7 @@ object Scalingua extends AutoPlugin {
 
     val compileLocalesStrategy = settingKey[String](
       "Specifies how CompiledLanguage retrieves its translation file." +
-        "Must be one of [ReadFromResources, InlineBase64]. Default: ReadFromResources")
+        "Must be one of [ReadFromResources, InlineBase64, LoadInRuntime]. Default: ReadFromResources")
 
     val taggedFile = settingKey[Option[File]]("Tagged file to include in target .pot")
 
@@ -202,6 +202,7 @@ object Scalingua extends AutoPlugin {
 
   def compileLocalesTask = Def.taskDyn {
     val strategy = PoCompilerStrategy.getStrategy((compileLocalesStrategy in compileLocales).value)
+
     val doCompiling: GenerationContext => Unit = PoCompiler.doCompiling(strategy)
     val compileEnglishTags: GenerationContext => Unit = PoCompiler.compileEnglishTags(strategy)
 
@@ -212,20 +213,26 @@ object Scalingua extends AutoPlugin {
       perLang = doCompiling,
       englishTags = compileEnglishTags)
 
-    val idx = {
-      val langs = collectLangs(compileLocales).value
-      val pkg = (localePackage in compileLocales).value
+    if (strategy.generatesIndex) {
+      val idx = {
+        val langs = collectLangs(compileLocales).value
+        val pkg = (localePackage in compileLocales).value
 
-      val tgt = filePkg((target in compileLocales).value, pkg) / "Languages.scala"
-      createParent(tgt)
+        val tgt = filePkg((target in compileLocales).value, pkg) / "Languages.scala"
+        createParent(tgt)
 
-      PoCompiler.generateIndex(pkg, tgt, langs, (taggedFile in compileLocales).value.isDefined)
+          PoCompiler.generateIndex(pkg, tgt, langs, (taggedFile in compileLocales).value.isDefined)
 
-      tgt
-    }
+        tgt
+      }
 
-    Def.task {
-      r.value :+ idx
+      Def.task {
+        r.value :+ idx
+      }
+    } else {
+      Def.task {
+        r.value
+      }
     }
   }
 }

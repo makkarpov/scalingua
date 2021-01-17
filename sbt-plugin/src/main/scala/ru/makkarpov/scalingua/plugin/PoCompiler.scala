@@ -167,6 +167,7 @@ object PoCompiler {
     }
 
     val pw = new NewLinePrintWriter(new OutputStreamWriter(new FileOutputStream(ctx.target), StandardCharsets.UTF_8), false)
+    val definition = compileStrategy.getCompiledLanguageDefinition(ctx)
     val initializationBlock = compileStrategy.getCompiledLanguageInitializationBlock(ctx, (out: OutputStream) => writeBinaryLanguage(ctx, out))
     try {
       pw.print(
@@ -175,7 +176,7 @@ object PoCompiler {
            |
            |import ru.makkarpov.scalingua.{CompiledLanguage, PluralFunction, TaggedLanguage}
            |
-           |object Language_${ctx.lang.language}_${ctx.lang.country}
+           |$definition
            |extends CompiledLanguage with PluralFunction {
            |  $initializationBlock
            |
@@ -242,6 +243,7 @@ object PoCompiler {
       return
 
     val pw = new NewLinePrintWriter(new OutputStreamWriter(new FileOutputStream(ctx.target), StandardCharsets.UTF_8), false)
+    val definition = compilerStrategy.getEnglishTagsDefinition(EnglishTagsClass)
     val initializationBlock = compilerStrategy.getEnglishTagsInitializationBlock(ctx, (out: OutputStream) => writeBinaryEnglishTags(ctx, out))
     try {
       pw.print(
@@ -250,7 +252,7 @@ object PoCompiler {
            |
            |import ru.makkarpov.scalingua.CompiledLanguage.EnglishTags
            |
-           |object $EnglishTagsClass extends EnglishTags {
+           |$definition extends EnglishTags {
            |  $initializationBlock
            |}
          """.stripMargin

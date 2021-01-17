@@ -19,9 +19,18 @@ package ru.makkarpov.scalingua.plugin
 import java.io.{ByteArrayOutputStream, OutputStream}
 
 sealed trait PoCompilerStrategy {
-  def isPackagingNecessary: Boolean
+  /** Specifies if plugin must generate Languages object indexing available languages. */
+  def generatesIndex: Boolean = true
+
+  /** Specifies if plugin must package *.po files into binary files. */
+  def isPackagingNecessary: Boolean = true
+
+  def getEnglishTagsDefinition(EnglishTagsClass: String): String = s"object $EnglishTagsClass"
 
   def getEnglishTagsInitializationBlock(ctx: GenerationContext, getStream: OutputStream => Unit): String
+
+  def getCompiledLanguageDefinition(ctx: GenerationContext): String =
+    s"object Language_${ctx.lang.language}_${ctx.lang.country}"
 
   def getCompiledLanguageInitializationBlock(ctx: GenerationContext, getStream: OutputStream => Unit): String
 }
@@ -30,13 +39,12 @@ object PoCompilerStrategy {
   def getStrategy(definition: String): PoCompilerStrategy = definition match {
     case "ReadFromResources" => new ReadFromResourcesStrategy
     case "InlineBase64" => new InlineBase64Strategy
+    case "LoadInRuntime" => new LoadInRuntimeStrategy
     case _ => throw new IllegalArgumentException("Cannot create PoCompilerStrategy.")
   }
 }
 
 class ReadFromResourcesStrategy extends PoCompilerStrategy {
-  override val isPackagingNecessary: Boolean = true
-
   override def getEnglishTagsInitializationBlock(ctx: GenerationContext, getStream: OutputStream => Unit): String =
     s"""
        |  initialize({
@@ -114,4 +122,17 @@ object InlineBase64Strategy {
   }
 }
 
+class LoadInRuntimeStrategy extends PoCompilerStrategy {
+  override def generatesIndex: Boolean = false
 
+  override def getEnglishTagsDefinition(EnglishTagsClass: String): String = s"class ${EnglishTagsClass}(is: java.io.InputStream)"
+
+  override def getEnglishTagsInitializationBlock(ctx: GenerationContext, getStream: OutputStream => Unit): String =
+    s"initialize(is)"
+
+  override def getCompiledLanguageDefinition(ctx: GenerationContext): String =
+    s"class Language_${ctx.lang.language}_${ctx.lang.country}(is: java.io.InputStream)"
+
+  override def getCompiledLanguageInitializationBlock(ctx: GenerationContext, getStream: OutputStream => Unit): String =
+    s"initialize(is)"
+}
