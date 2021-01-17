@@ -1,7 +1,7 @@
 import sbt.Keys._
 
 name := "scalingua-root"
-version := "0.8.1-SNAPSHOT"
+version := "0.9.1-SNAPSHOT"
 crossPaths := true
 
 publishArtifact := false
@@ -12,11 +12,11 @@ val common = Seq(
   version := (version in LocalRootProject).value,
 
   crossPaths := true,
-  scalaVersion := "2.10.4",
-  crossScalaVersions := Seq("2.11.12", "2.12.8", "2.13.0-M5"),
+  scalaVersion := "2.12.12", //should be the same for all projects for cross-build to work
+  crossScalaVersions := Seq("2.11.12", scalaVersion.value, "2.13.4"),
   scalacOptions ++= Seq( "-Xfatal-warnings", "-feature", "-deprecation" ),
 
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.6-SNAP6" % Test,
+  libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.2" % Test,
 
   publishArtifact in Test := false,
   publishMavenStyle := true,
@@ -50,16 +50,24 @@ val common = Seq(
   }
 )
 
-lazy val core = project
+lazy val core =  crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
   .settings(common:_*)
   .settings(
     name := "Scalingua Core",
     normalizedName := "scalingua-core",
-    description := "A minimal set of runtime classes for Scalingua"
+    description := "A minimal set of runtime classes for Scalingua",
+
+    libraryDependencies += "org.portable-scala" %%% "portable-scala-reflect" % "1.0.0"
   )
 
-lazy val scalingua = project
-  .enablePlugins(ParserGenerator, AssemblyPlugin)
+lazy val coreJVM = core.jvm
+lazy val coreJS = core.js
+
+lazy val scalingua =  crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Full)
+  .jvmConfigure(_.enablePlugins(ParserGenerator, AssemblyPlugin))
+  .jsConfigure(_.enablePlugins(ParserGenerator, AssemblyPlugin))
   .settings(common:_*)
   .settings(
     name := "Scalingua",
@@ -68,19 +76,9 @@ lazy val scalingua = project
 
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "com.github.vbmacher" % "java-cup-runtime" % "11b",
+      "com.github.vbmacher" % "java-cup-runtime" % "11b-20160615",
       "com.grack" % "nanojson" % "1.2"
     ),
-
-    libraryDependencies ++= {
-      CrossVersion.binaryScalaVersion(scalaVersion.value) match {
-        case "2.10" => Seq(
-          compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
-          "org.scalamacros" %% "quasiquotes" % "2.0.1"
-        )
-        case _ => Nil
-      }
-    },
 
     assemblyShadeRules in assembly := Seq(
       ShadeRule.rename("java_cup.runtime.**" -> "ru.makkarpov.scalingua.pofile.shaded_javacup.@1").inAll
@@ -91,7 +89,11 @@ lazy val scalingua = project
       f.data.getName.contains("java-cup-runtime")
     }
   )
-  .dependsOn(core)
+  .jvmConfigure(_.dependsOn(coreJVM))
+  .jsConfigure(_.dependsOn(coreJS))
+
+lazy val scalinguaJVM = scalingua.jvm
+lazy val scalinguaJS = scalingua.js
 
 lazy val scalingua_shadedCup = project.in(file("target/shaded-cup"))
     .settings(common:_*)
@@ -100,10 +102,10 @@ lazy val scalingua_shadedCup = project.in(file("target/shaded-cup"))
       normalizedName := "scalingua-shaded",
       description := "Scalingua with shaded CUP runtime to prevent conflicts",
 
-      packageBin in Compile := (assembly in (scalingua, Compile)).value,
-      libraryDependencies := (libraryDependencies in scalingua).value.filterNot(_.name.contains("java-cup"))
+      packageBin in Compile := (assembly in (scalinguaJVM, Compile)).value,
+      libraryDependencies := (libraryDependencies in scalinguaJVM).value.filterNot(_.name.contains("java-cup"))
     )
-    .dependsOn(scalingua.dependencies:_*)
+    .dependsOn(scalinguaJVM.dependencies:_*)
 
 lazy val play = project
   .settings(common:_*)
@@ -113,15 +115,13 @@ lazy val play = project
     description := "An integration module for Play Framework",
 
     // Recent versions of Play supports only recent version of Scala.
-    // We should keep `crossPath` to keep naming consistent
-    scalaVersion := "2.11.12",
-    crossScalaVersions := Seq("2.11.12", "2.12.8", "2.13.0-M5"),
+    crossScalaVersions := Seq(scalaVersion.value, "2.13.4"),
 
     libraryDependencies ++= Seq(
-      "com.typesafe.play" %% "twirl-api" % "1.4.0",
-      "com.typesafe.play" %% "play" % "2.7.0"
+      "com.typesafe.play" %% "twirl-api" % "1.5.0",
+      "com.typesafe.play" %% "play" % "2.8.0"
     )
-  ).dependsOn(scalingua)
+  ).dependsOn(scalinguaJVM)
 
 lazy val plugin = project
   .in(file("sbt-plugin"))
@@ -133,12 +133,12 @@ lazy val plugin = project
     description := "SBT plugin that compiles locales, manages locations of *.pot files and so on",
 
     crossPaths := false,
-    scalaVersion := scala.util.Properties.versionNumberString,
     crossScalaVersions := Seq(scalaVersion.value),
-    sbtPlugin := true,
 
     scriptedLaunchOpts ++= Seq(
       "-Xmx1024M", "-XX:MaxPermSize=256M", "-Dscalingua.version=" + (version in LocalRootProject).value
     ),
-    scriptedBufferLog := false
-  ).dependsOn(scalingua)
+    scriptedBufferLog := false,
+    scripted := scripted.dependsOn(scalinguaJVM / publishLocal, coreJVM / publishLocal).evaluated,
+    pluginCrossBuild / sbtVersion := "1.2.8", //https://github.com/sbt/sbt/issues/5049
+  ).dependsOn(scalinguaJVM)

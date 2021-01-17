@@ -73,12 +73,8 @@ object PoCompiler {
     }
   }
 
-  def doPackaging(ctx: GenerationContext): Unit = {
-    // Should we regenerate file?
-    if (ctx.checkBinaryHash)
-      return
-
-    val dos = new DataOutputStream(new FileOutputStream(ctx.target))
+  private def writeBinaryLanguage(ctx: GenerationContext, out: OutputStream): Unit = {
+    val dos = new DataOutputStream(out)
     try {
       dos.writeUTF(ctx.srcHash)
 
@@ -136,7 +132,16 @@ object PoCompiler {
     } finally dos.close()
   }
 
-  def doCompiling(ctx: GenerationContext): Unit = {
+  def doPackaging(ctx: GenerationContext): Unit = {
+    // Should we regenerate file?
+    if (ctx.checkBinaryHash)
+      return
+
+    writeBinaryLanguage(ctx, new FileOutputStream(ctx.target))
+  }
+
+
+  def doCompiling(compileStrategy: PoCompilerStrategy)(ctx: GenerationContext): Unit = {
     // Should we regenerate file?
     if (ctx.checkTextHash)
       return
@@ -162,6 +167,8 @@ object PoCompiler {
     }
 
     val pw = new NewLinePrintWriter(new OutputStreamWriter(new FileOutputStream(ctx.target), StandardCharsets.UTF_8), false)
+    val definition = compileStrategy.getCompiledLanguageDefinition(ctx)
+    val initializationBlock = compileStrategy.getCompiledLanguageInitializationBlock(ctx, (out: OutputStream) => writeBinaryLanguage(ctx, out))
     try {
       pw.print(
         s"""${GenerationContext.ScalaHashPrefix}${ctx.srcHash}
@@ -169,15 +176,9 @@ object PoCompiler {
            |
            |import ru.makkarpov.scalingua.{CompiledLanguage, PluralFunction, TaggedLanguage}
            |
-           |object Language_${ctx.lang.language}_${ctx.lang.country}
+           |$definition
            |extends CompiledLanguage with PluralFunction {
-           |  initialize({
-           |    val str = getClass.getResourceAsStream("${ctx.filePrefix}data_${ctx.lang.language}_${ctx.lang.country}.bin")
-           |    if (str eq null) {
-           |      throw new IllegalArgumentException("Resource not found for language ${ctx.lang.language}_${ctx.lang.country}")
-           |    }
-           |    str
-           |  })
+           |  $initializationBlock
            |
            |  val numPlurals = ${pf.numPlurals}
            |  def plural(arg: Long): Int = (${pf.expr.scalaExpression}).toInt
@@ -194,7 +195,9 @@ object PoCompiler {
         s"""${if (pkg.nonEmpty) s"package $pkg" else ""}
            |
            |import ru.makkarpov.scalingua.{Messages, TaggedLanguage}
+           |import org.portablescala.reflect.annotation.EnableReflectiveInstantiation
            |
+           |@EnableReflectiveInstantiation
            |object Languages extends Messages(${if (hasTags) EnglishTagsClass else "TaggedLanguage.Identity"}${if (langs.nonEmpty) "," else ""}
            |  ${langs.map(l => s"Language_${l.language}_${l.country}").mkString(",\n  ")}
            |)
@@ -203,12 +206,8 @@ object PoCompiler {
     } finally pw.close()
   }
 
-  def packageEnglishTags(ctx: GenerationContext): Unit = {
-    // Should we regenerate file?
-    if (ctx.checkBinaryHash)
-      return
-
-    val dos = new DataOutputStream(new FileOutputStream(ctx.target))
+  def writeBinaryEnglishTags(ctx: GenerationContext, out: OutputStream): Unit = {
+    val dos = new DataOutputStream(out)
     try {
       dos.writeUTF(ctx.srcHash)
 
@@ -230,12 +229,22 @@ object PoCompiler {
     } finally dos.close()
   }
 
-  def compileEnglishTags(ctx: GenerationContext): Unit = {
+  def packageEnglishTags(ctx: GenerationContext): Unit = {
+    // Should we regenerate file?
+    if (ctx.checkBinaryHash)
+      return
+
+    writeBinaryEnglishTags(ctx, new FileOutputStream(ctx.target))
+  }
+
+  def compileEnglishTags(compilerStrategy: PoCompilerStrategy)(ctx: GenerationContext): Unit = {
     // Should we regenerate file?
     if (ctx.checkTextHash)
       return
 
     val pw = new NewLinePrintWriter(new OutputStreamWriter(new FileOutputStream(ctx.target), StandardCharsets.UTF_8), false)
+    val definition = compilerStrategy.getEnglishTagsDefinition(EnglishTagsClass)
+    val initializationBlock = compilerStrategy.getEnglishTagsInitializationBlock(ctx, (out: OutputStream) => writeBinaryEnglishTags(ctx, out))
     try {
       pw.print(
         s"""${GenerationContext.ScalaHashPrefix}${ctx.srcHash}
@@ -243,13 +252,8 @@ object PoCompiler {
            |
            |import ru.makkarpov.scalingua.CompiledLanguage.EnglishTags
            |
-           |object $EnglishTagsClass extends EnglishTags {
-           |  initialize({
-           |    val str = getClass.getResourceAsStream("${ctx.filePrefix}compiled_english_tags.bin")
-           |    if (str eq null)
-           |      throw new NullPointerException("Compiled english tags not found!")
-           |    str
-           |  })
+           |$definition extends EnglishTags {
+           |  $initializationBlock
            |}
          """.stripMargin
       )

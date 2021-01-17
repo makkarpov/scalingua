@@ -1,0 +1,48 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: test 0.1\n"
+"PO-Revision-Date: 2016-04-20 12:45+0300\n"
+"Last-Translator: makkarpov <me@makkarpov.ru>\n"
+"Language-Team: Russian\n"
+"Language: ru-RU\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: src/test/scala/Test.scala:19
+#: src/test/scala/Test.scala:12
+msgid "Hello, world!"
+msgstr "Привет, мир!"
+
+#: src/test/scala/Test.scala:13
+#: src/test/scala/Test.scala:20
+msgid "There is %(n) dog!"
+msgid_plural "There is %(n) dogs!"
+msgstr[0] "Здесь %(n) собака!"
+msgstr[1] "Здесь %(n) собаки!"
+msgstr[2] "Здесь %(n) собак!"
+
+#: src/test/scala/Test.scala:47
+msgid "Percents! %"
+msgstr "Проценты! %"
+
+#: src/test/scala/Test.scala:48
+msgid "Percents!! %"
+msgstr "Проценты!! %"
+
+#: src/test/scala/Test.scala:51
+msgid "Percents with variables%%: %(x), percents%%"
+msgstr "Проценты с перменными%%: %(x), проценты%%"
+
+#: src/test/scala/Test.scala:53
+msgid "Percents after variable: %(x)%%"
+msgstr "Проценты после переменной: %(x)%%"
+
+#: src/test/scala/Test.scala:56
+msgid "Look, I have %(x) percent: %%!"
+msgid_plural "Look, I have %(x) percents: %%!"
+msgstr[0] "Смотри, у меня %(x) процент: %%!"
+msgstr[1] "Смотри, у меня %(x) процента: %%!"
+msgstr[2] "Смотри, у меня %(x) процентов: %%!"
