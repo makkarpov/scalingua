@@ -139,6 +139,10 @@ lazy val plugin = project
       "-Xmx1024M", "-XX:MaxPermSize=256M", "-Dscalingua.version=" + (version in LocalRootProject).value
     ),
     scriptedBufferLog := false,
-    scripted := scripted.dependsOn(scalinguaJVM / publishLocal, coreJVM / publishLocal).evaluated,
+    scripted := scripted.dependsOn(
+      scalinguaJVM / publishLocal,
+      coreJVM / publishLocal,
+      scalinguaJS / publishLocal,
+      coreJS/ publishLocal).evaluated,
     pluginCrossBuild / sbtVersion := "1.2.8", //https://github.com/sbt/sbt/issues/5049
   ).dependsOn(scalinguaJVM)
