@@ -1,7 +1,7 @@
 import sbt.Keys._
 
 name := "scalingua-root"
-version := "0.9.1-SNAPSHOT"
+version := "1.1-SNAPSHOT"
 crossPaths := true
 
 publishArtifact := false
@@ -47,7 +47,9 @@ val common = Seq(
       Some("snapshots" at nexus + "content/repositories/snapshots")
     else
       Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-  }
+  },
+  // double publishes sbt artifact for some reason
+  publishConfiguration := publishConfiguration.value.withOverwrite(true)
 )
 
 lazy val core =  crossProject(JSPlatform, JVMPlatform)
