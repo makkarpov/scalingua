@@ -52,10 +52,12 @@ object PoFile {
     parser.parse().value.asInstanceOf[Seq[Message]]
   }
 
-  def update(f: File, messages: Seq[Message], escapeUnicode: Boolean = true): Unit = {
+  def update(f: File, messages: Seq[Message], escapeUnicode: Boolean = true, includeHeaderComment: Boolean = true): Unit = {
     val output = new NewLinePrintWriter(new OutputStreamWriter(new FileOutputStream(f), encoding), false)
     try {
-      output.println(headerComment(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())))
+      if (includeHeaderComment) {
+        output.println(headerComment(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())))
+      }
       output.println()
 
       def printEntry(s: String, m: MultipartString): Unit = {
