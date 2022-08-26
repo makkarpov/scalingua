@@ -57,8 +57,8 @@ object PoFile {
     try {
       if (includeHeaderComment) {
         output.println(headerComment(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())))
+        output.println()
       }
-      output.println()
 
       def printEntry(s: String, m: MultipartString): Unit = {
         output.print(s + " ")
