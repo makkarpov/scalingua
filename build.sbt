@@ -1,7 +1,7 @@
 import sbt.Keys._
 
 name := "scalingua-root"
-version := "1.2-SNAPSHOT"
+version := "1.1.3-SNAPSHOT"
 crossPaths := true
 
 publishArtifact := false
@@ -14,7 +14,8 @@ val common = Seq(
   crossPaths := true,
   scalaVersion := "2.12.12", //should be the same for all projects for cross-build to work
   crossScalaVersions := Seq("2.11.12", scalaVersion.value, "2.13.4"),
-  scalacOptions ++= Seq( "-Xfatal-warnings", "-feature", "-deprecation" ),
+  javacOptions ++= Seq( "-source", "1.8", "-target", "1.8" ),
+  scalacOptions ++= Seq( "-Xfatal-warnings", "-feature", "-deprecation", "-target:jvm-1.8" ),
 
   libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.2" % Test,
 
