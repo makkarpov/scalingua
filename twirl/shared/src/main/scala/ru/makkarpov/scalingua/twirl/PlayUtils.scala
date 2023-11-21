@@ -14,19 +14,25 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package ru.makkarpov.scalingua
+package ru.makkarpov.scalingua.twirl
 
-object Compat {
-  type Context = scala.reflect.macros.Context
-  def prettyPrint(c: Context)(e: c.Tree): String = c.universe.show(e)
-  def termName(c: Context)(s: String): c.TermName = c.universe.newTermName(c.fresh(s))
-  def typecheck(c: Context)(e: c.Tree): c.Tree = c.typeCheck(e)
+import play.twirl.api.Html
+import ru.makkarpov.scalingua._
 
-  def processEscapes(s: String) = scala.StringContext.treatEscapes(s)
+import scala.language.experimental.macros
 
-  implicit class MutSetOps[A](s: scala.collection.mutable.Set[A]) {
-    def filterInPlace(p: A => Boolean) = s.retain(p)
+object PlayUtils {
+  class StringInterpolator(val sc: StringContext) extends AnyVal {
+    def h(args: Any*)(implicit lang: Language, outputFormat: OutputFormat[Html]): Html =
+      macro Macros.interpolate[Html]
+
+    def lh(args: Any*)(implicit outputFormat: OutputFormat[Html]): LValue[Html] =
+      macro Macros.lazyInterpolate[Html]
+
+    def ph(args: Any*)(implicit lang: Language, outputFormat: OutputFormat[Html]): Html =
+      macro Macros.pluralInterpolate[Html]
+
+    def lph(args: Any*)(outputFormat: OutputFormat[Html]): LValue[Html] =
+      macro Macros.lazyPluralInterpolate[Html]
   }
-
-  val CollectionConverters = scala.collection.JavaConverters
 }

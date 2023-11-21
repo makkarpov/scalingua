@@ -21,7 +21,7 @@ import org.scalatest.matchers.should.Matchers
 import ru.makkarpov.scalingua.I18n._
 
 class MacroTest extends AnyFlatSpec with Matchers {
-  implicit val mockLang = new MockLang("")
+  implicit val mockLang: MockLang = new MockLang("")
 
   it should "handle string interpolations" in {
     t"Hello, world!" shouldBe "{s:Hello, world!}"

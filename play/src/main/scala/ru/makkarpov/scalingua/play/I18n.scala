@@ -18,38 +18,13 @@ package ru.makkarpov.scalingua.play
 
 import play.api.http.HeaderNames
 import play.api.mvc.RequestHeader
-import play.twirl.api.Html
 import ru.makkarpov.scalingua
 import ru.makkarpov.scalingua._
 
 import scala.language.experimental.macros
 import scala.language.implicitConversions
 
-trait I18n extends scalingua.I18n {
-  type LHtml = LValue[Html]
-
-  implicit val htmlOutputFormat = new OutputFormat[Html] {
-    override def convert(s: String): Html = Html(s)
-
-    override def escape(s: String): String = {
-      val ret = new StringBuilder
-      var i = 0
-      ret.sizeHint(s.length)
-      while (i < s.length) {
-        s.charAt(i) match {
-          case '<' => ret.append("&lt;")
-          case '>' => ret.append("&gt;")
-          case '"' => ret.append("&quot;")
-          case '\'' => ret.append("&#x27;")
-          case '&' => ret.append("&amp;")
-          case c => ret += c
-        }
-        i += 1
-      }
-      ret.result()
-    }
-  }
-
+trait I18n extends scalingua.twirl.I18n {
   // The conversion from `RequestHeader` to `LanguageId` will imply information loss:
   // Suppose browser sent the following language precedence list `xx_YY`, `zz_WW`, `en_US`.
   // This conversion will have no information about available languages, so it will result in
@@ -59,37 +34,6 @@ trait I18n extends scalingua.I18n {
 
   implicit def requestHeader2Language(implicit rq: RequestHeader, msg: Messages): Language =
     rq.headers.get(HeaderNames.ACCEPT_LANGUAGE).map(PlayUtils.languageFromAccept).getOrElse(Language.English)
-
-  implicit def stringContext2Interpolator1(sc: StringContext): PlayUtils.StringInterpolator =
-    new PlayUtils.StringInterpolator(sc)
-
-  def th(msg: String, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[Html]): Html =
-    macro Macros.singular[Html]
-
-  def lth(msg: String, args: (String, Any)*)(implicit outputFormat: OutputFormat[Html]): LHtml =
-    macro Macros.lazySingular[Html]
-
-  def tch(ctx: String, msg: String, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[Html]): Html =
-    macro Macros.singularCtx[Html]
-
-  def ltch(ctx: String, msg: String, args: (String, Any)*)(implicit outputFormat: OutputFormat[Html]): LHtml =
-    macro Macros.lazySingularCtx[Html]
-
-  def p(msg: String, msgPlural: String, n: Long, args: (String, Any)*)
-       (implicit lang: Language, outputFormat: OutputFormat[Html]): Html =
-    macro Macros.plural[Html]
-
-  def lp(msg: String, msgPlural: String, n: Long, args: (String, Any)*)
-        (implicit outputFormat: OutputFormat[Html]): LHtml =
-    macro Macros.lazyPlural[Html]
-
-  def pc(ctx: String, msg: String, msgPlural: String, n: Long, args: (String, Any)*)
-        (implicit lang: Language, outputFormat: OutputFormat[Html]): Html =
-    macro Macros.pluralCtx[Html]
-
-  def lpc(ctx: String, msg: String, msgPlural: String, n: Long, args: (String, Any)*)
-         (implicit outputFormat: OutputFormat[Html]): LHtml =
-    macro Macros.lazyPluralCtx[Html]
 }
 
 object I18n extends I18n
