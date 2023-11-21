@@ -17,26 +17,11 @@
 package ru.makkarpov.scalingua.play
 
 import play.api.mvc.RequestHeader
-import play.twirl.api.Html
 import ru.makkarpov.scalingua._
 
 import scala.language.experimental.macros
 
 object PlayUtils {
-  class StringInterpolator(val sc: StringContext) extends AnyVal {
-    def h(args: Any*)(implicit lang: Language, outputFormat: OutputFormat[Html]): Html =
-      macro Macros.interpolate[Html]
-
-    def lh(args: Any*)(implicit outputFormat: OutputFormat[Html]): LValue[Html] =
-      macro Macros.lazyInterpolate[Html]
-
-    def ph(args: Any*)(implicit lang: Language, outputFormat: OutputFormat[Html]): Html =
-      macro Macros.pluralInterpolate[Html]
-
-    def lph(args: Any*)(outputFormat: OutputFormat[Html]): LValue[Html] =
-      macro Macros.lazyPluralInterpolate[Html]
-  }
-
   // Modified to match only correct doubles
   private val qPattern = ";\\s*q=((?:[0-9]+\\.)?[0-9]+)".r
 

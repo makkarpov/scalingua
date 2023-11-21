@@ -1,0 +1,83 @@
+/******************************************************************************
+ * Copyright © 2016 Maxim Karpov                                              *
+ *                                                                            *
+ * Licensed under the Apache License, Version 2.0 (the "License");            *
+ * you may not use this file except in compliance with the License.           *
+ * You may obtain a copy of the License at                                    *
+ *                                                                            *
+ *     http://www.apache.org/licenses/LICENSE-2.0                             *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the License is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ ******************************************************************************/
+
+package ru.makkarpov.scalingua.twirl
+
+import play.twirl.api.Html
+import ru.makkarpov.scalingua
+import ru.makkarpov.scalingua._
+
+import scala.language.experimental.macros
+import scala.language.implicitConversions
+
+trait I18n extends scalingua.I18n {
+  type LHtml = LValue[Html]
+
+  implicit val htmlOutputFormat: OutputFormat[Html] = new OutputFormat[Html] {
+    override def convert(s: String): Html = Html(s)
+
+    override def escape(s: String): String = {
+      val ret = new StringBuilder
+      var i = 0
+      ret.sizeHint(s.length)
+      while (i < s.length) {
+        s.charAt(i) match {
+          case '<' => ret.append("&lt;")
+          case '>' => ret.append("&gt;")
+          case '"' => ret.append("&quot;")
+          case '\'' => ret.append("&#x27;")
+          case '&' => ret.append("&amp;")
+          case c => ret += c
+        }
+        i += 1
+      }
+      ret.result()
+    }
+  }
+
+  implicit def stringContext2Interpolator1(sc: StringContext): PlayUtils.StringInterpolator =
+    new PlayUtils.StringInterpolator(sc)
+
+  def th(msg: String, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[Html]): Html =
+    macro Macros.singular[Html]
+
+  def lth(msg: String, args: (String, Any)*)(implicit outputFormat: OutputFormat[Html]): LHtml =
+    macro Macros.lazySingular[Html]
+
+  def tch(ctx: String, msg: String, args: (String, Any)*)(implicit lang: Language, outputFormat: OutputFormat[Html]): Html =
+    macro Macros.singularCtx[Html]
+
+  def ltch(ctx: String, msg: String, args: (String, Any)*)(implicit outputFormat: OutputFormat[Html]): LHtml =
+    macro Macros.lazySingularCtx[Html]
+
+  def p(msg: String, msgPlural: String, n: Long, args: (String, Any)*)
+       (implicit lang: Language, outputFormat: OutputFormat[Html]): Html =
+    macro Macros.plural[Html]
+
+  def lp(msg: String, msgPlural: String, n: Long, args: (String, Any)*)
+        (implicit outputFormat: OutputFormat[Html]): LHtml =
+    macro Macros.lazyPlural[Html]
+
+  def pc(ctx: String, msg: String, msgPlural: String, n: Long, args: (String, Any)*)
+        (implicit lang: Language, outputFormat: OutputFormat[Html]): Html =
+    macro Macros.pluralCtx[Html]
+
+  def lpc(ctx: String, msg: String, msgPlural: String, n: Long, args: (String, Any)*)
+         (implicit outputFormat: OutputFormat[Html]): LHtml =
+    macro Macros.lazyPluralCtx[Html]
+}
+
+object I18n extends I18n

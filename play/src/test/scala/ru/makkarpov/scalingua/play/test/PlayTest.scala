@@ -22,13 +22,6 @@ import ru.makkarpov.scalingua.{Language, Messages, TaggedLanguage}
 import ru.makkarpov.scalingua.play.I18n._
 
 class PlayTest extends AnyFlatSpec with Matchers {
-  it should "handle HTML translations" in {
-    implicit val lang = Language.English
-    val x = "\"List<String>\""
-    h"A class <code>$x</code> can be used to provide simple list container".body shouldBe
-      "A class <code>&quot;List&lt;String&gt;&quot;</code> can be used to provide simple list container"
-  }
-
   it should "handle 'Accept' header" in {
     implicit val messages = new Messages(
       TaggedLanguage.Identity,

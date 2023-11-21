@@ -25,7 +25,7 @@ import scala.language.experimental.macros
 class CustomI18nTest extends AnyFlatSpec with Matchers {
   case class CStr(s: String)
 
-  implicit val CStrFormat = new OutputFormat[CStr] {
+  implicit val CStrFormat: OutputFormat[CStr] = new OutputFormat[CStr] {
     override def convert(s: String): CStr = CStr(s"C{$s}")
     override def escape(s: String): String = s"[$s]"
   }
@@ -35,7 +35,7 @@ class CustomI18nTest extends AnyFlatSpec with Matchers {
       macro Macros.singular[CStr]
   }
 
-  implicit val mockLang = new MockLang("")
+  implicit val mockLang: MockLang = new MockLang("")
 
   import CustomI18n._
 

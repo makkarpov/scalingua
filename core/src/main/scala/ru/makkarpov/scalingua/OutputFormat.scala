@@ -20,7 +20,7 @@ object OutputFormat {
   /**
     * String interpolation format that does nothing at all it's already strings.
     */
-  implicit val StringFormat = new OutputFormat[String] {
+  implicit val StringFormat: OutputFormat[String] = new OutputFormat[String] {
     override def convert(s: String): String = s
     override def escape(s: String): String = s
   }

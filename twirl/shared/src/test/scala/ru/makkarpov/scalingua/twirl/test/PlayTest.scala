@@ -14,23 +14,18 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package ru.makkarpov.scalingua
+package ru.makkarpov.scalingua.twirl.test
 
-import ru.makkarpov.scalingua.extract.MessageExtractor
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+import ru.makkarpov.scalingua.{Language, Messages, TaggedLanguage}
+import ru.makkarpov.scalingua.twirl.I18n._
 
-import scala.reflect.macros.whitebox
-
-object Compat {
-  type Context = whitebox.Context
-  def prettyPrint(c: Context)(e: c.Tree): String = c.universe.showCode(e)
-  def termName(c: Context)(s: String): c.TermName = c.universe.TermName(c.freshName(s))
-  def typecheck(c: Context)(e: c.Tree): c.Tree = c.typecheck(e)
-
-  def processEscapes(s: String) = scala.StringContext.processEscapes(s)
-
-  implicit class MutSetOps[A](s: scala.collection.mutable.Set[A]) {
-    def filterInPlace(p: A => Boolean) = s.retain(p)
+class PlayTest extends AnyFlatSpec with Matchers {
+  it should "handle HTML translations" in {
+    implicit val lang = Language.English
+    val x = "\"List<String>\""
+    h"A class <code>$x</code> can be used to provide simple list container".body shouldBe
+      "A class <code>&quot;List&lt;String&gt;&quot;</code> can be used to provide simple list container"
   }
-
-  val CollectionConverters = scala.collection.JavaConverters
 }
